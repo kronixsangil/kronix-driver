@@ -2,7 +2,13 @@
 
 export type ApiError = { status: number; message: string };
 
-const API_BASE = process.env.NEXT_PUBLIC_API;
+function getApiBase() {
+  if (typeof window !== "undefined") {
+    return "/api/driver";
+  }
+
+  return process.env.NEXT_PUBLIC_API;
+}
 
 let refreshing: Promise<boolean> | null = null;
 
@@ -19,7 +25,8 @@ function isAuthPath(path: string) {
 }
 
 async function refreshSession(): Promise<boolean> {
-  if (!API_BASE) return false;
+  const API_BASE = getApiBase();
+if (!API_BASE) return false;
 
   // evitar múltiples refresh simultáneos
   if (!refreshing) {
@@ -63,9 +70,11 @@ async function readBody<T>(res: Response): Promise<T> {
 }
 
 export async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
-  if (!API_BASE) {
-    throw { status: 0, message: "Falta NEXT_PUBLIC_API en .env.local" } satisfies ApiError;
-  }
+  const API_BASE = getApiBase();
+
+if (!API_BASE) {
+  throw { status: 0, message: "Falta NEXT_PUBLIC_API en .env.local" } satisfies ApiError;
+}
 
   const method = String(options.method ?? "GET").toUpperCase();
   const headers = new Headers(options.headers || {});

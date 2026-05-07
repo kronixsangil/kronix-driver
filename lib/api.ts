@@ -1,5 +1,11 @@
 //lib/api.ts
-const API_BASE = process.env.NEXT_PUBLIC_API;
+function getApiBase() {
+  if (typeof window !== "undefined") {
+    return "/api/driver";
+  }
+
+  return process.env.NEXT_PUBLIC_API;
+}
 
 export type ApiError = { status: number; message: string };
 
@@ -8,6 +14,7 @@ export async function apiFetch<T>(
   options: RequestInit = {},
   accessToken?: string | null
 ): Promise<T> {
+  const API_BASE = getApiBase();
   if (!API_BASE) throw { status: 0, message: "Falta NEXT_PUBLIC_API en .env.local" };
 
   const headers = new Headers(options.headers || {});

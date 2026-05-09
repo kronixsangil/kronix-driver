@@ -917,15 +917,16 @@ const syncActiveOrderFromBackend = useCallback(async () => {
       return null;
     }
 
-    const backendStep = stepFromApi(activeFromBackend, "ASIGNADO");
+    const backendStep = stepFromApi(activeFromBackend, assignedStepRef.current);
+const safeStep = maxStep(assignedStepRef.current, backendStep);
 
     assignedOrderRef.current = activeFromBackend;
-    assignedStepRef.current = backendStep;
+    assignedStepRef.current = safeStep;
 
     setOrders([]);
     setSelectedId(null);
     setAssignedOrder(activeFromBackend);
-    setAssignedStep(backendStep);
+    setAssignedStep(safeStep);
 
     return activeFromBackend;
   } finally {
@@ -1045,8 +1046,10 @@ useEffect(() => {
     setAssignedOrder(active);
     assignedOrderRef.current = active;
 
-    setAssignedStep(backendStep);
-    assignedStepRef.current = backendStep;
+    const safeStep = maxStep(assignedStepRef.current, backendStep);
+
+setAssignedStep(safeStep);
+assignedStepRef.current = safeStep;
 
     setOrders([]);
     setSelectedId(null);
@@ -1430,11 +1433,16 @@ courierStops: Array.isArray((assignedOrder as any)?.courierStops)
           order={orderDTO}
           readyPickupStoreNames={readyPickupStoreNames}
           onPickedUp={async () => {
-            markAction();
-            const r = await driverUpdateOrderStatus(assignedOrder.orderId, "EN_ROUTE");
-            if (!r.ok) return;
-            setStep("EN_RUTA");
-          }}
+  markAction();
+
+  const r = await driverUpdateOrderStatus(assignedOrder.orderId, "EN_ROUTE");
+
+  if (!r.ok) {
+    throw new Error("No se pudo pasar el pedido a En Ruta.");
+  }
+
+  setStep("EN_RUTA");
+}}
         />
       );
     }
@@ -1444,10 +1452,9 @@ courierStops: Array.isArray((assignedOrder as any)?.courierStops)
         order={orderDTO}
         readyPickupStoreNames={readyPickupStoreNames}
         onArrived={async () => {
-          markAction();
-          await driverUpdateOrderStatus(assignedOrder.orderId, "ASSIGNED");
-          setStep("EN_CAMINO");
-        }}
+  markAction();
+  setStep("EN_CAMINO");
+}}
         cancelling={cancelling}
         onCancel={async () => {
           if (cancelling) return;

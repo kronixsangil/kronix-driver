@@ -3,13 +3,12 @@
 
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
-import { driverUpdateOrderStatus } from "../../lib/driverOrderApi";
 import type { DriverOrder } from "../../lib/types";
 import ChecklistConfirmModal from "./ChecklistConfirmModal";
 
 interface Props {
   order: DriverOrder;
-  onPickedUp?: () => void;
+  onPickedUp?: () => void | Promise<void>;
   readyPickupStoreNames?: string[];
 }
 
@@ -170,28 +169,19 @@ export default function PickupOrderCard({
   }, [order, pickups.length, note.length]);
 
   const finalizePickedUp = async () => {
-    if (working) return;
-    setErr(null);
-    setWorking(true);
+  if (working) return;
 
-    onPickedUp?.();
+  setErr(null);
+  setWorking(true);
 
-    try {
-      const flow = String(order.flowStatus ?? "").toUpperCase();
-      const status = String(order.status ?? "").toUpperCase();
-
-      if (flow !== "EN_ROUTE" && status !== "EN_ROUTE") {
-        const res = await driverUpdateOrderStatus(order.orderId, "EN_ROUTE");
-        if (res && "ok" in res && !res.ok) {
-          throw new Error("No se pudo actualizar a EN_ROUTE.");
-        }
-      }
-    } catch (e: any) {
-      setErr(e?.message ? String(e.message) : "No se pudo actualizar el estado. Reintenta.");
-    } finally {
-      setTimeout(() => setWorking(false), 200);
-    }
-  };
+  try {
+    await Promise.resolve(onPickedUp?.());
+  } catch (e: any) {
+    setErr(e?.message ? String(e.message) : "No se pudo actualizar el estado. Reintenta.");
+  } finally {
+    setTimeout(() => setWorking(false), 200);
+  }
+};
 
   const handlePickedUpClick = () => {
     if (checks.length === 0) {

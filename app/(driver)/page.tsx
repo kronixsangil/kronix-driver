@@ -562,13 +562,10 @@ function normalizeAvailable(raw: any): AvailableOrder | null {
 
 async function fetchOrderFromApi(orderId: string): Promise<AvailableOrder | null> {
   try {
-    const res = await fetch(`${API_BASE}/orders/${orderId}`, {
-      cache: "no-store",
-      credentials: "include",
-    });
-    if (!res.ok) return null;
-
-    const o = await res.json();
+    const o = await apiFetch<any>(`/orders/${orderId}`, {
+  method: "GET",
+  cache: "no-store",
+});
 
     const status = String(o?.status ?? "").toUpperCase();
     const flowStatus = String(o?.flowStatus ?? "").toUpperCase();
@@ -1248,7 +1245,22 @@ useEffect(() => {
     url: assignedOrder?.orderId
       ? `${API_BASE}/events/stream?orderId=${encodeURIComponent(assignedOrder.orderId)}`
       : null,
-    onMessage: async () => {
+    onMessage: async (ev) => {
+  try {
+    const raw = String(ev?.data ?? "").trim();
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      const type = String(parsed?.type ?? "").trim();
+
+      if (type === "ping") return;
+
+      if (type && type !== "order.updated" && type !== "driver.order.ready_for_pickup") {
+        return;
+      }
+    }
+  } catch {
+    return;
+  }
       if (!assignedOrder?.orderId) return;
       if (assignedStep === "ENTREGADO" || deliveredHoldRef.current) return;
       if (Date.now() - lastActionAtRef.current < 1400) return;

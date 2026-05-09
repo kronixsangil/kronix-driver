@@ -1,7 +1,7 @@
 // app/(driver)/lib/useSse.ts
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 type UseSseArgs = {
   url: string | null;
@@ -11,30 +11,32 @@ type UseSseArgs = {
 };
 
 export function useSse({ url, onMessage, onError, enabled = true }: UseSseArgs) {
+  const onMessageRef = useRef(onMessage);
+  const onErrorRef = useRef(onError);
+
+  onMessageRef.current = onMessage;
+  onErrorRef.current = onError;
+
   useEffect(() => {
     if (!enabled) return;
     if (!url) return;
 
     let closed = false;
-
-    // ✅ CLAVE: enviar cookies (ct_at/ct_sid/ct_rt) en SSE cross-origin
     const es = new EventSource(url, { withCredentials: true });
 
     es.onmessage = (ev) => {
       if (closed) return;
-      onMessage?.(ev);
+      onMessageRef.current?.(ev);
     };
 
     es.onerror = (ev) => {
       if (closed) return;
-      onError?.(ev);
-      // nota: EventSource reintenta solo automáticamente
+      onErrorRef.current?.(ev);
     };
 
     return () => {
       closed = true;
       es.close();
     };
-  }, [url, enabled, onMessage, onError]);
+  }, [url, enabled]);
 }
-

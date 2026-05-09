@@ -128,7 +128,7 @@ export default function DriverBottomNav() {
   return (
     // ✅ CAMBIO MÍNIMO: antes era "fixed bottom-0 left-1/2 ..."
     // Ahora queda DENTRO del phone frame (DriverShell tiene relative)
-    <nav className="absolute bottom-0 left-0 right-0 z-[999] w-full border-t border-gray-200 bg-white/95 backdrop-blur shadow-[0_-8px_24px_rgba(15,23,42,0.10)]">
+    <nav className="absolute bottom-0 left-0 right-0 z-[1000] w-full border-t border-gray-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur shadow-[0_-8px_24px_rgba(15,23,42,0.10)]">
       <div className="flex items-center justify-around px-2 py-2">
         <Link className={itemClass(isActive("/"))} href="/">
           <IconHome active={isActive("/")} />

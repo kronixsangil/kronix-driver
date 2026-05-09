@@ -12,8 +12,6 @@ export default function DriverShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
 
-  // ✅ Rutas públicas que NO deben ser bloqueadas por el guard
-  // (para evitar el “flash” y el redirect inmediato)
   const isPublic = useMemo(() => {
     const p = String(pathname ?? "");
     return p === "/login" || p === "/forgot-password" || p === "/reset-password";
@@ -26,7 +24,6 @@ export default function DriverShell({ children }: { children: ReactNode }) {
     let alive = true;
 
     (async () => {
-      // ✅ En rutas públicas NO bloqueamos ni redirigimos
       if (isPublic) {
         if (alive) {
           setNotDriver(false);
@@ -45,7 +42,6 @@ export default function DriverShell({ children }: { children: ReactNode }) {
           return;
         }
 
-        // NO_SESSION
         const next = encodeURIComponent(pathname || "/orders");
         router.replace(`/login?next=${next}`);
         return;
@@ -61,43 +57,41 @@ export default function DriverShell({ children }: { children: ReactNode }) {
   }, [router, pathname, isPublic]);
 
   return (
-    <div className="h-screen overflow-hidden bg-gray-100 flex justify-center px-4 py-6">
-      {/* Phone frame */}
-      <div className="w-full max-w-md overflow-hidden rounded-[28px] border border-gray-200 bg-white shadow-sm relative flex flex-col">
-        {/* Header */}
-        <DriverTopBar />
+    <div className="fixed inset-0 overflow-hidden bg-gray-100 driver-app-shell">
+      <div className="mx-auto h-[100dvh] w-full max-w-md overflow-hidden bg-white shadow-sm md:my-4 md:h-[calc(100dvh-2rem)] md:rounded-[28px] md:border md:border-gray-200">
+        <div className="relative h-full w-full overflow-hidden bg-gray-50">
+          <header className="absolute left-0 right-0 top-0 z-[1000] bg-white">
+            <DriverTopBar />
+          </header>
 
-        {/* Content */}
-        <main
-  id="driver-scroll-container"
-  className={[
-            "bg-gray-50 overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden",
-            // ✅ CLAVE: en rutas públicas quitamos padding del shell
-            // para que Login/Forgot/Reset se vean idénticas (mismo tamaño y posición)
-            isPublic
-              ? "px-0 pt-0 pb-0 min-h-[calc(100vh-180px)]"
-              : "px-4 pt-4 pb-24 min-h-[calc(100vh-180px)]",
-          ].join(" ")}
-        >
-          {/* Gate (solo aplica fuera de rutas públicas) */}
-          {!isPublic && checking ? (
-            <div className="mt-2 rounded-3xl bg-white p-6 shadow-sm animate-pulse border border-gray-200">
-              <div className="h-6 w-44 bg-gray-100 rounded mb-4" />
-              <div className="h-12 bg-gray-100 rounded mb-3" />
-              <div className="h-12 bg-gray-100 rounded mb-3" />
-              <div className="h-12 bg-gray-100 rounded" />
-            </div>
-          ) : notDriver ? (
-            <div className="mt-2 rounded-3xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-800">
-              Esta cuenta no tiene permisos de conductor (DRIVER). Inicia sesión con una cuenta DRIVER.
-            </div>
-          ) : (
-            children
-          )}
-        </main>
+          <main
+            id="driver-scroll-container"
+            className={[
+              "absolute left-0 right-0 overflow-y-auto overscroll-contain no-scrollbar",
+              "touch-pan-y scroll-smooth bg-gray-50",
+              isPublic
+                ? "top-[76px] bottom-0 px-0 pt-0 pb-0"
+                : "top-[76px] bottom-[76px] px-4 pt-4 pb-6",
+            ].join(" ")}
+          >
+            {!isPublic && checking ? (
+              <div className="mt-2 rounded-3xl bg-white p-6 shadow-sm animate-pulse border border-gray-200">
+                <div className="h-6 w-44 bg-gray-100 rounded mb-4" />
+                <div className="h-12 bg-gray-100 rounded mb-3" />
+                <div className="h-12 bg-gray-100 rounded mb-3" />
+                <div className="h-12 bg-gray-100 rounded" />
+              </div>
+            ) : notDriver ? (
+              <div className="mt-2 rounded-3xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-800">
+                Esta cuenta no tiene permisos de conductor (DRIVER). Inicia sesión con una cuenta DRIVER.
+              </div>
+            ) : (
+              children
+            )}
+          </main>
 
-        {/* ✅ Bottom nav NO se muestra en rutas públicas */}
-        {!isPublic ? <DriverBottomNav /> : null}
+          {!isPublic ? <DriverBottomNav /> : null}
+        </div>
       </div>
     </div>
   );

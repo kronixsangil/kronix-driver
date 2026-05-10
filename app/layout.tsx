@@ -7,27 +7,33 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "KroniX Driver",
   description: "App de conductores KroniX",
+
   manifest: "/manifest.webmanifest",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "default",
-    title: "KroniX Driver",
-  },
+
   icons: {
     icon: "/kronix-icon.png",
     apple: "/kronix-icon.png",
   },
+
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "KroniX Driver",
+  },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#16a34a",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
   viewportFit: "cover",
+  themeColor: "#16a34a",
 };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: ReactNode;
+}) {
   return (
     <html lang="es">
       <body>

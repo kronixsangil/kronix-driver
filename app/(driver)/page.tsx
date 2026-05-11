@@ -1211,8 +1211,8 @@ assignedStepRef.current = safeStep;
           updatedAt,
         });
 
-        playDriverSound("GENERIC", 1800);
-        showNotify("Pedido listo para recoger", `${storeName} ya tiene el pedido listo.`);
+        playDriverSound("PICKUP", 1800);
+showNotify("Pedido listo para recoger", `${storeName} ya tiene el pedido listo.`);
 
         const current = assignedOrderRef.current;
         if (current?.orderId && current.orderId === orderId) {
@@ -1283,14 +1283,48 @@ assignedStepRef.current = safeStep;
 }
 
       const currentStep = assignedStepRef.current;
-      const apiStep = stepFromApi(fresh, currentStep);
-      const nextStep = maxStep(currentStep, apiStep);
+const apiStep = stepFromApi(fresh, currentStep);
+const nextStep = maxStep(currentStep, apiStep);
 
-      setAssignedOrder(fresh);
-      assignedOrderRef.current = fresh;
+// 🔊 Sonidos por transición de estado
+if (nextStep !== currentStep) {
+  if (nextStep === "EN_RUTA") {
+    playDriverSound("EN_ROUTE", 1800);
+    showNotify(
+      "Servicio en ruta",
+      "El servicio ahora está en ruta."
+    );
+  }
 
-      assignedStepRef.current = nextStep;
-      setAssignedStep(nextStep);
+  if (nextStep === "ENTREGADO") {
+    playDriverSound("DELIVERED", 1800);
+    showNotify(
+      "Servicio entregado",
+      "El pedido fue entregado correctamente."
+    );
+  }
+}
+
+const freshStatus = String(fresh?.status ?? "").toUpperCase();
+const freshFlow = String(fresh?.flowStatus ?? "").toUpperCase();
+
+if (
+  freshStatus === "CANCELLED" ||
+  freshFlow === "CANCELLED"
+) {
+  playDriverSound("CANCELLED", 1800);
+
+  showNotify(
+    "Servicio cancelado",
+    "El servicio fue cancelado."
+  );
+}
+
+setAssignedOrder(fresh);
+assignedOrderRef.current = fresh;
+
+assignedStepRef.current = nextStep;
+setAssignedStep(nextStep);
     },
   });
 

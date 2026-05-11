@@ -3,6 +3,7 @@
 
 import { useEffect, useRef } from "react";
 import { apiFetch } from "../lib/apiFetch";
+import { playDriverSound } from "./(driver)/lib/sound";
 
 function urlBase64ToUint8Array(base64String: string) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -67,9 +68,59 @@ async function registerDriverPush() {
   return true;
 }
 
+function playForegroundPushSound(payload: any) {
+  const sound = String(payload?.sound ?? "").toLowerCase();
+
+  if (sound.includes("new") || sound.includes("order")) {
+    playDriverSound("NEW_AVAILABLE", 500);
+    return;
+  }
+
+  if (sound.includes("assigned")) {
+    playDriverSound("ASSIGNED", 500);
+    return;
+  }
+
+  if (sound.includes("pickup")) {
+    playDriverSound("PICKUP", 500);
+    return;
+  }
+
+  if (sound.includes("en-route") || sound.includes("route")) {
+    playDriverSound("EN_ROUTE", 500);
+    return;
+  }
+
+  if (sound.includes("delivered")) {
+    playDriverSound("DELIVERED", 500);
+    return;
+  }
+
+  if (sound.includes("cancelled") || sound.includes("canceled")) {
+    playDriverSound("CANCELLED", 500);
+    return;
+  }
+
+  playDriverSound("GENERIC", 500);
+}
+
 export default function PwaRegister() {
   const registeredRef = useRef(false);
   const triesRef = useRef(0);
+
+  useEffect(() => {
+    const onServiceWorkerMessage = (event: MessageEvent) => {
+      if (event.data?.type !== "KRONIX_DRIVER_PUSH_FOREGROUND") return;
+
+      playForegroundPushSound(event.data?.payload);
+    };
+
+    navigator.serviceWorker?.addEventListener("message", onServiceWorkerMessage);
+
+    return () => {
+      navigator.serviceWorker?.removeEventListener("message", onServiceWorkerMessage);
+    };
+  }, []);
 
   useEffect(() => {
     let alive = true;

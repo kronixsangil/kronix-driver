@@ -21,8 +21,20 @@ export function showNotify(title: string, body: string) {
   if (!("Notification" in window)) return;
   if (Notification.permission !== "granted") return;
 
+  // ✅ CLAVE:
+  // Si la app está abierta en primer plano, NO lanzamos notificación del sistema,
+  // porque esa notificación usa el sonido del sistema y tapa/confunde el MP3 interno.
+  if (document.visibilityState === "visible") {
+    return;
+  }
+
   try {
-    new Notification(title, { body });
+    new Notification(title, {
+      body,
+      icon: "/kronix-icon.png",
+      badge: "/kronix-icon.png",
+      tag: "kronix-driver",
+    });
   } catch {
     // nada
   }

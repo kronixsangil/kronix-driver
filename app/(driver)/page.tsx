@@ -1487,6 +1487,16 @@ courierStops: Array.isArray((assignedOrder as any)?.courierStops)
         readyPickupStoreNames={readyPickupStoreNames}
         onArrived={async () => {
   markAction();
+
+  const r = await driverUpdateOrderStatus(
+    assignedOrder.orderId,
+    "ASSIGNED"
+  );
+
+  if (!r.ok) {
+    throw new Error("No se pudo reportar llegada.");
+  }
+
   setStep("EN_CAMINO");
 }}
         cancelling={cancelling}

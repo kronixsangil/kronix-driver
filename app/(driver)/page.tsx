@@ -22,6 +22,7 @@ import { driverFetchAvailableOrders } from "../(driver)/lib/driverOrderApi";
 import { playDriverSound } from "../(driver)/lib/sound";
 import { ensureNotifyPermission, showNotify } from "../(driver)/lib/notify";
 import { useDriverCity } from "./components/DriverCityContext";
+import { DRIVER_TERMS_VERSION } from "./legal/driverTerms";
 
 type AvailableOrderStore = {
   storeId: string;
@@ -730,6 +731,10 @@ export default function DriverHomePage() {
 
   const [orders, setOrders] = useState<AvailableOrder[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  const [termsAccepted, setTermsAccepted] = useState(false);
+const [checkingTerms, setCheckingTerms] = useState(true);
+
   const [cancelling, setCancelling] = useState(false);
 
   const [assignedOrder, setAssignedOrder] = useState<AvailableOrder | null>(null);
@@ -776,6 +781,95 @@ export default function DriverHomePage() {
       setMapSrc("/maps/driver-generic.png");
     }
   }, [citySlug]);
+
+  useEffect(() => {
+  let mounted = true;
+
+  async function checkTerms() {
+    try {
+      setCheckingTerms(true);
+
+      // 1. Verificación REAL backend
+      const res = await apiFetch<{
+        ok: boolean;
+        accepted: boolean;
+      }>(
+        `/legal/status?documentType=DRIVER_TERMS&version=${encodeURIComponent(
+          DRIVER_TERMS_VERSION
+        )}`,
+        {
+          method: "GET",
+          cache: "no-store",
+        }
+      );
+
+      if (!mounted) return;
+
+      if (res?.accepted) {
+        setTermsAccepted(true);
+
+        // cache local UX
+        localStorage.setItem(
+          "kronix_driver_terms_acceptance",
+          JSON.stringify({
+            version: DRIVER_TERMS_VERSION,
+            acceptedAt: new Date().toISOString(),
+          })
+        );
+
+        return;
+      }
+
+      // 2. fallback localStorage
+      const raw = localStorage.getItem(
+        "kronix_driver_terms_acceptance"
+      );
+
+      if (!raw) {
+        setTermsAccepted(false);
+        return;
+      }
+
+      const parsed = JSON.parse(raw);
+
+      setTermsAccepted(
+        parsed?.version === DRIVER_TERMS_VERSION
+      );
+    } catch {
+      if (!mounted) return;
+
+      // fallback local UX
+      try {
+        const raw = localStorage.getItem(
+          "kronix_driver_terms_acceptance"
+        );
+
+        if (!raw) {
+          setTermsAccepted(false);
+          return;
+        }
+
+        const parsed = JSON.parse(raw);
+
+        setTermsAccepted(
+          parsed?.version === DRIVER_TERMS_VERSION
+        );
+      } catch {
+        setTermsAccepted(false);
+      }
+    } finally {
+      if (mounted) {
+        setCheckingTerms(false);
+      }
+    }
+  }
+
+  checkTerms();
+
+  return () => {
+    mounted = false;
+  };
+}, []);
 
   useEffect(() => {
     ensureNotifyPermission();
@@ -1530,6 +1624,92 @@ courierStops: Array.isArray((assignedOrder as any)?.courierStops)
   }
 
   const empty = visibleOrders.length === 0;
+
+if (!checkingTerms && !termsAccepted) {
+  return (
+    <div className="w-full bg-slate-50 p-0">
+      <div className="mx-auto flex min-h-[76vh] w-full max-w-md flex-col justify-center px-3 py-4">
+        <div className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-lg">
+          <div className="px-5 pb-4 pt-5">
+            <div className="flex items-start gap-4">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-3xl ring-1 ring-emerald-100">
+                ⚖️
+              </div>
+
+              <div className="min-w-0 flex-1">
+                <h1 className="text-2xl font-black leading-tight text-slate-950">
+                  Actualización legal requerida
+                </h1>
+
+                <p className="mt-2 text-[13px] font-medium leading-5 text-slate-600">
+                  Para continuar operando en KroniX debes revisar y aceptar la
+                  versión vigente de los Términos y Condiciones para Conductores.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="px-5 pb-5">
+            <div className="rounded-3xl border border-emerald-200 bg-emerald-50/80 p-4">
+              <div className="flex items-start gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-xl ring-1 ring-emerald-100">
+                  ⚖️
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-black text-emerald-800">
+                    Acción obligatoria
+                  </div>
+
+                  <div className="mt-1 text-[12px] font-medium leading-4 text-emerald-900/85">
+                    Hasta aceptar los documentos legales vigentes:
+                  </div>
+
+                  <div className="mt-3 grid gap-1.5 text-[12px] font-bold leading-4 text-emerald-950">
+                    <div>• No podrás recibir pedidos</div>
+                    <div>• No podrás operar en línea</div>
+                    <div>• No podrás utilizar servicios Driver</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-3 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+              <div className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+                Documento requerido
+              </div>
+
+              <div className="mt-2 text-[15px] font-black leading-5 text-slate-950">
+                Términos y Condiciones Conductores KroniX
+              </div>
+
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <span className="text-[12px] font-semibold text-slate-600">
+                  Versión vigente:
+                </span>
+
+                <span className="rounded-full bg-slate-950 px-3 py-1 text-[10px] font-black text-white">
+                  {DRIVER_TERMS_VERSION}
+                </span>
+              </div>
+            </div>
+
+            <a
+              href="/profile"
+              className="mt-4 flex w-full items-center justify-center rounded-2xl bg-emerald-600 px-5 py-3.5 text-sm font-black text-white shadow-md transition-all duration-200 active:scale-[0.98]"
+            >
+              Revisar y aceptar documentos
+            </a>
+
+            <div className="mt-3 text-center text-[10px] leading-4 text-slate-500">
+              KroniX protege la seguridad, legalidad y calidad operativa del ecosistema.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
   return (
     <div className="w-full bg-white p-0">

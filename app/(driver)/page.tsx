@@ -23,6 +23,20 @@ import { playDriverSound } from "../(driver)/lib/sound";
 import { ensureNotifyPermission, showNotify } from "../(driver)/lib/notify";
 import { useDriverCity } from "./components/DriverCityContext";
 import { DRIVER_TERMS_VERSION } from "./legal/driverTerms";
+import { DRIVER_PRIVACY_VERSION } from "./legal/driverPrivacy";
+import {
+  checkDriverPrivacyStatus,
+  hasDriverPrivacyLocal,
+} from "./lib/driverPrivacyLegal";
+
+import {
+  checkDriverIndependenceStatus,
+  hasDriverIndependenceLocal,
+} from "./lib/driverIndependenceLegal";
+
+import { DRIVER_INDEPENDENCE_VERSION } from "./legal/driverIndependence";
+
+
 
 type AvailableOrderStore = {
   storeId: string;
@@ -104,6 +118,7 @@ type DriverReadyMap = Record<
 
 const READY_PICKUP_DRIVER_STORAGE_KEY = "ct_driver_ready_orders_v2";
 const API_BASE = process.env.NEXT_PUBLIC_API || "http://localhost:3004";
+
 
 const STEP_RANK: Record<ActiveState["step"], number> = {
   ASIGNADO: 0,
@@ -733,7 +748,13 @@ export default function DriverHomePage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const [termsAccepted, setTermsAccepted] = useState(false);
+const [privacyAccepted, setPrivacyAccepted] = useState(false);
+
+const [independenceAccepted, setIndependenceAccepted] = useState(false);
+const [checkingIndependence, setCheckingIndependence] = useState(true);
+
 const [checkingTerms, setCheckingTerms] = useState(true);
+const [checkingPrivacy, setCheckingPrivacy] = useState(true);
 
   const [cancelling, setCancelling] = useState(false);
 
@@ -869,6 +890,27 @@ const [checkingTerms, setCheckingTerms] = useState(true);
   return () => {
     mounted = false;
   };
+}, []);
+
+useEffect(() => {
+  try {
+    const raw = localStorage.getItem("kronix_driver_privacy_acceptance");
+
+    if (!raw) {
+      setPrivacyAccepted(false);
+      return;
+    }
+
+    const parsed = JSON.parse(raw);
+
+    setPrivacyAccepted(
+      parsed?.version === DRIVER_PRIVACY_VERSION
+    );
+  } catch {
+    setPrivacyAccepted(false);
+  } finally {
+    setCheckingPrivacy(false);
+  }
 }, []);
 
   useEffect(() => {
@@ -1337,6 +1379,47 @@ showNotify("Pedido listo para recoger", `${storeName} ya tiene el pedido listo.`
     };
   }, [driverIdForEvents]);
 
+  useEffect(() => {
+  let mounted = true;
+
+  async function loadIndependence() {
+    setCheckingIndependence(true);
+
+    try {
+      const res = await checkDriverIndependenceStatus(); // retorna true/false
+      if (!mounted) return;
+      setIndependenceAccepted(!!res);
+
+      // cache local UX
+      if (res) {
+        localStorage.setItem(
+          "kronix_driver_independence_acceptance",
+          JSON.stringify({
+            version: DRIVER_INDEPENDENCE_VERSION,
+            acceptedAt: new Date().toISOString(),
+          })
+        );
+      }
+    } catch {
+      // fallback localStorage
+      try {
+        const raw = localStorage.getItem("kronix_driver_independence_acceptance");
+        const parsed = raw ? JSON.parse(raw) : null;
+        setIndependenceAccepted(parsed?.version === DRIVER_INDEPENDENCE_VERSION);
+      } catch {
+        setIndependenceAccepted(false);
+      }
+    } finally {
+      if (mounted) setCheckingIndependence(false);
+    }
+  }
+
+  loadIndependence();
+  return () => {
+    mounted = false;
+  };
+}, []);
+
   useSse({
     enabled: !!assignedOrder?.orderId && assignedStep !== "ENTREGADO",
     url: assignedOrder?.orderId
@@ -1625,84 +1708,53 @@ courierStops: Array.isArray((assignedOrder as any)?.courierStops)
 
   const empty = visibleOrders.length === 0;
 
-if (!checkingTerms && !termsAccepted) {
+if (
+  !checkingTerms &&
+  !checkingPrivacy &&
+  !checkingIndependence &&
+  (!termsAccepted || !privacyAccepted || !independenceAccepted)
+) {
   return (
     <div className="w-full bg-slate-50 p-0">
       <div className="mx-auto flex min-h-[76vh] w-full max-w-md flex-col justify-center px-3 py-4">
         <div className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-lg">
-          <div className="px-5 pb-4 pt-5">
-            <div className="flex items-start gap-4">
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-3xl ring-1 ring-emerald-100">
-                ⚖️
+          <div className="px-5 pb-5 pt-5">
+            <div className="flex flex-col gap-4">
+              <h1 className="text-2xl font-black text-slate-950">
+                Actualización legal requerida
+              </h1>
+              <p className="mt-2 text-[13px] font-medium leading-5 text-slate-600">
+                Para continuar operando en KroniX debes revisar y aceptar los documentos legales vigentes.
+              </p>
+
+              <div className="mt-4 grid gap-2">
+                {!termsAccepted && (
+                  <a
+                    href="/profile/terms"
+                    className="w-full rounded-2xl bg-emerald-600 px-5 py-3.5 text-sm font-black text-white text-center"
+                  >
+                    Revisar Términos y Condiciones
+                  </a>
+                )}
+
+                {!privacyAccepted && termsAccepted && (
+                  <a
+                    href="/profile/privacy"
+                    className="w-full rounded-2xl bg-emerald-600 px-5 py-3.5 text-sm font-black text-white text-center"
+                  >
+                    Revisar Política de Privacidad
+                  </a>
+                )}
+
+                {!independenceAccepted && termsAccepted && privacyAccepted && (
+                  <a
+                    href="/profile/independence"
+                    className="w-full rounded-2xl bg-emerald-600 px-5 py-3.5 text-sm font-black text-white text-center"
+                  >
+                    Revisar Acuerdo de Independencia
+                  </a>
+                )}
               </div>
-
-              <div className="min-w-0 flex-1">
-                <h1 className="text-2xl font-black leading-tight text-slate-950">
-                  Actualización legal requerida
-                </h1>
-
-                <p className="mt-2 text-[13px] font-medium leading-5 text-slate-600">
-                  Para continuar operando en KroniX debes revisar y aceptar la
-                  versión vigente de los Términos y Condiciones para Conductores.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="px-5 pb-5">
-            <div className="rounded-3xl border border-emerald-200 bg-emerald-50/80 p-4">
-              <div className="flex items-start gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-xl ring-1 ring-emerald-100">
-                  ⚖️
-                </div>
-
-                <div className="min-w-0 flex-1">
-                  <div className="text-sm font-black text-emerald-800">
-                    Acción obligatoria
-                  </div>
-
-                  <div className="mt-1 text-[12px] font-medium leading-4 text-emerald-900/85">
-                    Hasta aceptar los documentos legales vigentes:
-                  </div>
-
-                  <div className="mt-3 grid gap-1.5 text-[12px] font-bold leading-4 text-emerald-950">
-                    <div>• No podrás recibir pedidos</div>
-                    <div>• No podrás operar en línea</div>
-                    <div>• No podrás utilizar servicios Driver</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-3 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
-              <div className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
-                Documento requerido
-              </div>
-
-              <div className="mt-2 text-[15px] font-black leading-5 text-slate-950">
-                Términos y Condiciones Conductores KroniX
-              </div>
-
-              <div className="mt-2 flex flex-wrap items-center gap-2">
-                <span className="text-[12px] font-semibold text-slate-600">
-                  Versión vigente:
-                </span>
-
-                <span className="rounded-full bg-slate-950 px-3 py-1 text-[10px] font-black text-white">
-                  {DRIVER_TERMS_VERSION}
-                </span>
-              </div>
-            </div>
-
-            <a
-              href="/profile"
-              className="mt-4 flex w-full items-center justify-center rounded-2xl bg-emerald-600 px-5 py-3.5 text-sm font-black text-white shadow-md transition-all duration-200 active:scale-[0.98]"
-            >
-              Revisar y aceptar documentos
-            </a>
-
-            <div className="mt-3 text-center text-[10px] leading-4 text-slate-500">
-              KroniX protege la seguridad, legalidad y calidad operativa del ecosistema.
             </div>
           </div>
         </div>
@@ -1713,7 +1765,10 @@ if (!checkingTerms && !termsAccepted) {
 
   return (
     <div className="w-full bg-white p-0">
-      {!checkingEligibility && !canOperate ? (
+      {!checkingEligibility &&
+!checkingTerms &&
+!checkingPrivacy &&
+!canOperate ? (
         <div className="mx-auto w-full max-w-md px-4 pt-4">
           <div className="rounded-3xl border border-amber-200 bg-amber-50 p-4 shadow-sm">
             <div className="flex items-start gap-3">

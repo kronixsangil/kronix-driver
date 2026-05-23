@@ -12,7 +12,6 @@ import NavCard from "./components/cards/NavCard";
 
 import { loadDriverHistoryWithSnapshot, type DriverHistoryItem } from "../lib/driverHistory";
 import { useDriverCity } from "../components/DriverCityContext";
-import DriverLegalCard from "./components/DriverLegalCard";
 
 function levelFromDeliveries(count: number) {
   if (count >= 100) return { key: "PLATINO", next: null, min: 100 };
@@ -193,12 +192,25 @@ export default function DriverProfilePage() {
           <NavCard title="Información de pago" desc="Métodos de pago y estado" href="/profile/pay-info" />
           <NavCard title="Seguridad" desc="Contraseña y sesiones" href="/profile/security" />
           <NavCard title="Instructivo" desc="Guías rápidas del conductor" href="/profile/instructions" />
-          <NavCard title="Soporte" desc="Ayuda y contacto" href="/profile/support" />
-          <NavCard
+<NavCard
   title="Términos y Condiciones"
   desc="Documento legal obligatorio para conductores"
   href="/profile/terms"
 />
+
+<NavCard
+  title="Política de Privacidad"
+  desc="Datos personales, GPS, documentos y seguridad"
+  href="/profile/privacy"
+/>
+
+<NavCard
+  title="Acuerdo de Independencia"
+  desc="Autonomía operativa y no subordinación"
+  href="/profile/independence"
+/>
+
+<NavCard title="Soporte" desc="Ayuda y contacto" href="/profile/support" />
         </div>
 
         <div className="text-center text-[11px] text-gray-500">

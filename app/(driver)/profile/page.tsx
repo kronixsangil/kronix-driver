@@ -210,6 +210,18 @@ export default function DriverProfilePage() {
   href="/profile/independence"
 />
 
+<NavCard
+  title="Manual Operativo y Seguridad"
+  desc="Comportamiento, seguridad, servicio e incidentes"
+  href="/profile/operational-security"
+/>
+
+<NavCard
+  title="Política Antifraude"
+  desc="Cuentas, pagos, GPS, suplantación y pedidos falsos"
+  href="/profile/anti-fraud"
+/>
+
 <NavCard title="Soporte" desc="Ayuda y contacto" href="/profile/support" />
         </div>
 

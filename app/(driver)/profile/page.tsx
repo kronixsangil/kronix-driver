@@ -222,6 +222,12 @@ export default function DriverProfilePage() {
   href="/profile/anti-fraud"
 />
 
+<NavCard
+  title="Academia KroniX"
+  desc="Capacitación rápida para conductores"
+  href="/profile/academy"
+/>
+
 <NavCard title="Soporte" desc="Ayuda y contacto" href="/profile/support" />
         </div>
 

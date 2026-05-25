@@ -10,7 +10,7 @@ export default function AcademyFraudPreventionPage() {
       subtitle="GPS falso, cuentas compartidas, robo, fraude y suplantación."
       icon="🔐"
       videoTitle="Prevención de fraude en KroniX"
-      videoUrl="https://www.youtube.com/embed/EGikbXGoZVc"
+      videoUrl="https://www.youtube.com/embed/dykJBcpnHVE"
       checklist={[
         "Entiendo que mi cuenta es personal e intransferible.",
         "Entiendo que GPS falso, pedidos falsos o manipulación de pagos están prohibidos.",

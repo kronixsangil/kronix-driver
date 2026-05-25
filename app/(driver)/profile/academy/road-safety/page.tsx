@@ -10,7 +10,7 @@ export default function AcademyRoadSafetyPage() {
       subtitle="Conducción segura, accidentes, zonas peligrosas y manejo defensivo."
       icon="🛵"
       videoTitle="Seguridad vial para conductores KroniX"
-      videoUrl="https://www.youtube.com/embed/EGikbXGoZVc"
+      videoUrl="https://www.youtube.com/embed/ckcWtvlHO0"
       checklist={[
         "Entiendo que debo cumplir las normas de tránsito.",
         "No debo manipular el celular mientras conduzco.",

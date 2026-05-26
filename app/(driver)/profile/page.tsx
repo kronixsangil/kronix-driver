@@ -1,6 +1,7 @@
 // app/(driver)/profile/page.tsx
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { getDriverMe } from "../../../lib/driverAuth";
@@ -8,9 +9,11 @@ import { getDriverMe } from "../../../lib/driverAuth";
 import ProfileHeader from "./components/ProfileHeader";
 import DriverIdentityCard from "./components/DriverIdentityCard";
 import MetricsCard from "./components/cards/MetricsCard";
-import NavCard from "./components/cards/NavCard";
 
-import { loadDriverHistoryWithSnapshot, type DriverHistoryItem } from "../lib/driverHistory";
+import {
+  loadDriverHistoryWithSnapshot,
+  type DriverHistoryItem,
+} from "../lib/driverHistory";
 import { useDriverCity } from "../components/DriverCityContext";
 
 function levelFromDeliveries(count: number) {
@@ -28,8 +31,66 @@ type MeState = {
   payoutMethod?: string;
 };
 
+type ProfileImageNavCardProps = {
+  title: string;
+  desc: string;
+  href: string;
+  imageSrc: string;
+  imageAlt: string;
+  imageClassName?: string;
+};
+
+function ProfileImageNavCard({
+  title,
+  desc,
+  href,
+  imageSrc,
+  imageAlt,
+  imageClassName = "scale-[1.25] translate-x-[0px] translate-y-[0px]",
+}: ProfileImageNavCardProps) {
+  return (
+    <Link
+      href={href}
+      className="relative mx-0 block overflow-hidden rounded-2xl border border-gray-200 bg-white p-4 shadow-sm active:scale-[0.99]"
+    >
+      <div className="flex items-center gap-4">
+        <div className="relative h-16 w-16 shrink-0 overflow-visible">
+          <Image
+            src={imageSrc}
+            alt={imageAlt}
+            fill
+            sizes="64px"
+            className={[
+              "pointer-events-none select-none object-contain drop-shadow-sm",
+              imageClassName,
+            ].join(" ")}
+          />
+        </div>
+
+        <div className="relative z-10 min-w-0 flex-1">
+          <div className="text-xl font-black leading-6 text-slate-950">
+            {title}
+          </div>
+          <div className="mt-1 text-[13px] leading-5 text-slate-600">
+            {desc}
+          </div>
+        </div>
+
+        <div className="relative z-10 shrink-0 text-xl font-bold text-slate-400">
+          ›
+        </div>
+      </div>
+    </Link>
+  );
+}
+
 export default function DriverProfilePage() {
-  const { cityName, cityDepartment, cityLabel, loading: cityLoading } = useDriverCity();
+  const {
+    cityName,
+    cityDepartment,
+    cityLabel,
+    loading: cityLoading,
+  } = useDriverCity();
 
   const [me, setMe] = useState<MeState>({
     fullName: "Conductor",
@@ -44,8 +105,9 @@ export default function DriverProfilePage() {
   const [history, setHistory] = useState<DriverHistoryItem[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
 
-  const [open, setOpen] = useState<string | null>("metricas");
-  const toggle = (key: string) => setOpen((prev) => (prev === key ? null : key));
+  const [open, setOpen] = useState<string | null>(null);
+  const toggle = (key: string) =>
+    setOpen((prev) => (prev === key ? null : key));
 
   useEffect(() => {
     let mounted = true;
@@ -122,7 +184,8 @@ export default function DriverProfilePage() {
     return {
       ...lvl,
       progressPct: Math.round(progress * 100),
-      remaining: lvl.next === null ? 0 : Math.max(0, lvl.next - metrics.deliveries),
+      remaining:
+        lvl.next === null ? 0 : Math.max(0, lvl.next - metrics.deliveries),
       hasNext: lvl.next !== null,
     };
   }, [metrics.deliveries]);
@@ -149,86 +212,133 @@ export default function DriverProfilePage() {
         />
 
         <MetricsCard
-          isOpen={open === "metricas"}
-          onToggle={() => toggle("metricas")}
-          deliveries={metrics.deliveries}
-          cancellations={metrics.cancellations}
-          avgTime={metrics.avgTime}
-          rating={metrics.rating}
-          levelKey={levelInfo.key}
-          progressPct={levelInfo.progressPct}
-          remaining={levelInfo.remaining}
-          hasNext={levelInfo.next !== null}
-          pickups={metrics.pickups}
-        />
+  isOpen={open === "metricas"}
+  onToggle={() => toggle("metricas")}
+  deliveries={metrics.deliveries}
+  cancellations={metrics.cancellations}
+  avgTime={metrics.avgTime}
+  rating={metrics.rating}
+  levelKey={levelInfo.key}
+  progressPct={levelInfo.progressPct}
+  remaining={levelInfo.remaining}
+  hasNext={levelInfo.next !== null}
+  pickups={metrics.pickups}
+/>
 
         {loadingHistory ? (
-          <div className="mx-2 rounded-2xl border border-gray-200 bg-white p-3 text-xs font-semibold text-gray-600 shadow-sm">
+          <div className="mx-0 rounded-2xl border border-gray-200 bg-white p-3 text-xs font-semibold text-gray-600 shadow-sm">
             Actualizando métricas…
           </div>
         ) : null}
 
-        <div className="mx-2 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <div className="text-[11px] font-bold uppercase tracking-wide text-gray-500">
-                Ciudad operativa
-              </div>
-              <div className="mt-1 text-sm font-extrabold text-gray-900">{cityText}</div>
-              <div className="mt-1 text-[12px] text-gray-600">
-                Esta es la ciudad bajo la que operas actualmente en la app Driver.
-              </div>
-            </div>
+          <div className="space-y-2">
+          <ProfileImageNavCard
+            title="Tu información"
+            desc="Datos personales básicos"
+            href="/profile/info"
+            imageSrc="/branding/Profile/informacion.png"
+            imageAlt="Tu información"
+            imageClassName="scale-[1.28] translate-x-[0px] translate-y-[0px]"
+          />
 
-            <div className="rounded-full bg-slate-50 px-3 py-1 text-[11px] font-extrabold text-slate-700 ring-1 ring-slate-200">
-              Multiciudad
-            </div>
-          </div>
-        </div>
+          <ProfileImageNavCard
+            title="Vehículos"
+            desc="Vehículo activo y administración"
+            href="/profile/cars"
+            imageSrc="/branding/Profile/Vehiculos.png"
+            imageAlt="Vehículos"
+            imageClassName="scale-[1.28] translate-x-[0px] translate-y-[0px]"
+          />
 
-        <div className="space-y-2">          
-          <NavCard title="Tu información" desc="Datos personales básicos" href="/profile/info" />
-          <NavCard title="Vehículos" desc="Vehículo activo y administración" href="/profile/cars" />
-          <NavCard title="Información de pago" desc="Métodos de pago y estado" href="/profile/pay-info" />
-          <NavCard title="Seguridad" desc="Contraseña y sesiones" href="/profile/security" />
-          <NavCard title="Instructivo" desc="Guías rápidas del conductor" href="/profile/instructions" />
-<NavCard
-  title="Términos y Condiciones"
-  desc="Documento legal obligatorio para conductores"
-  href="/profile/terms"
-/>
+          <ProfileImageNavCard
+            title="Información de pago"
+            desc="Métodos de pago y estado"
+            href="/profile/pay-info"
+            imageSrc="/branding/Profile/Payments.png"
+            imageAlt="Información de pago"
+            imageClassName="scale-[1.3] translate-x-[0px] translate-y-[0px]"
+          />
 
-<NavCard
-  title="Política de Privacidad"
-  desc="Datos personales, GPS, documentos y seguridad"
-  href="/profile/privacy"
-/>
+          <ProfileImageNavCard
+            title="Seguridad"
+            desc="Contraseña y sesiones"
+            href="/profile/security"
+            imageSrc="/branding/Profile/seguridad.png"
+            imageAlt="Seguridad"
+            imageClassName="scale-[1.25] translate-x-[0px] translate-y-[0px]"
+          />
 
-<NavCard
-  title="Acuerdo de Independencia"
-  desc="Autonomía operativa y no subordinación"
-  href="/profile/independence"
-/>
+          <ProfileImageNavCard
+            title="Instructivo"
+            desc="Guías rápidas del conductor"
+            href="/profile/instructions"
+            imageSrc="/branding/Profile/instructivo.png"
+            imageAlt="Instructivo"
+            imageClassName="scale-[1.28] translate-x-[0px] translate-y-[0px]"
+          />
 
-<NavCard
-  title="Manual Operativo y Seguridad"
-  desc="Comportamiento, seguridad, servicio e incidentes"
-  href="/profile/operational-security"
-/>
+          <ProfileImageNavCard
+            title="T. y C."
+            desc="Documento legal obligatorio para conductores"
+            href="/profile/terms"
+            imageSrc="/branding/Profile/tyc.png"
+            imageAlt="Términos y Condiciones"
+            imageClassName="scale-[1.25] translate-x-[0px] translate-y-[0px]"
+          />
 
-<NavCard
-  title="Política Antifraude"
-  desc="Cuentas, pagos, GPS, suplantación y pedidos falsos"
-  href="/profile/anti-fraud"
-/>
+          <ProfileImageNavCard
+            title="Política de Privacidad"
+            desc="Datos personales, GPS, documentos y seguridad"
+            href="/profile/privacy"
+            imageSrc="/branding/Profile/privacidad.png"
+            imageAlt="Política de Privacidad"
+            imageClassName="scale-[1.25] translate-x-[0px] translate-y-[0px]"
+          />
 
-<NavCard
-  title="Academia KroniX"
-  desc="Capacitación rápida para conductores"
-  href="/profile/academy"
-/>
+          <ProfileImageNavCard
+            title="Acuerdo de Independencia"
+            desc="Autonomía operativa y no subordinación"
+            href="/profile/independence"
+            imageSrc="/branding/Profile/Independence.png"
+            imageAlt="Acuerdo de Independencia"
+            imageClassName="scale-[1.27] translate-x-[0px] translate-y-[0px]"
+          />
 
-<NavCard title="Soporte" desc="Ayuda y contacto" href="/profile/support" />
+          <ProfileImageNavCard
+            title="Manual Operativo"
+            desc="Comportamiento, seguridad, servicio e incidentes"
+            href="/profile/operational-security"
+            imageSrc="/branding/Profile/seguridad.png"
+            imageAlt="Manual Operativo y Seguridad"
+            imageClassName="scale-[1.2] translate-x-[0px] translate-y-[0px]"
+          />
+
+          <ProfileImageNavCard
+            title="Política Antifraude"
+            desc="Cuentas, pagos, GPS, suplantación y pedidos falsos"
+            href="/profile/anti-fraud"
+            imageSrc="/branding/Profile/fraud-prevention.png"
+            imageAlt="Política Antifraude"
+            imageClassName="scale-[1.25] translate-x-[0px] translate-y-[0px]"
+          />
+
+          <ProfileImageNavCard
+            title="Academia KroniX"
+            desc="Capacitación rápida para conductores"
+            href="/profile/academy"
+            imageSrc="/branding/Profile/Academy.png"
+            imageAlt="Academia KroniX"
+            imageClassName="scale-[1.25] translate-x-[0px] translate-y-[0px]"
+          />
+
+          <ProfileImageNavCard
+            title="Soporte"
+            desc="Ayuda y contacto"
+            href="/profile/support"
+            imageSrc="/branding/Profile/soporte.png"
+            imageAlt="Soporte"
+            imageClassName="scale-[1.23] translate-x-[0px] translate-y-[0px]"
+          />
         </div>
 
         <div className="text-center text-[11px] text-gray-500">

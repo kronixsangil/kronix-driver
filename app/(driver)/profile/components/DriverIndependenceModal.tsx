@@ -77,7 +77,7 @@ export default function DriverIndependenceModal({
     reachedBottom && checked && !saving;
 
   return (
-    <div className="mx-2 overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-xl">
+    <div className="mx-0 overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-xl">
       <div className="border-b border-blue-100 bg-blue-50 px-4 pb-3 pt-4">
         <div className="flex items-start gap-3">
           <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl border border-emerald-100 bg-emerald-50 text-2xl">

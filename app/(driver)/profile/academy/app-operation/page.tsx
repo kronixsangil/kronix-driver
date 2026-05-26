@@ -11,6 +11,8 @@ export default function AcademyAppOperationPage() {
       icon="📲"
       videoTitle="Cómo operar correctamente en KroniX Driver"
       videoUrl="https://www.youtube.com/embed/EGikbXGoZVc"
+      version="academy-app-operation-v1"
+      trainingType="ACADEMY_APP_OPERATION"
       checklist={[
         "Entiendo que debo actualizar correctamente los estados del pedido.",
         "Debo comunicar novedades por canales autorizados.",
@@ -21,7 +23,11 @@ export default function AcademyAppOperationPage() {
           id: "status",
           question: "¿Por qué es importante actualizar los estados del pedido?",
           options: [
-            { id: "tracking", label: "Porque cliente, comercio y CTCC pueden hacer seguimiento.", correct: true },
+            {
+              id: "tracking",
+              label: "Porque cliente, comercio y CTCC pueden hacer seguimiento.",
+              correct: true,
+            },
             { id: "not_needed", label: "No es importante." },
             { id: "only_driver", label: "Solo le sirve al conductor." },
           ],
@@ -30,7 +36,11 @@ export default function AcademyAppOperationPage() {
           id: "support",
           question: "¿Qué debe hacer ante una novedad operativa?",
           options: [
-            { id: "report", label: "Reportarla por los canales autorizados.", correct: true },
+            {
+              id: "report",
+              label: "Reportarla por los canales autorizados.",
+              correct: true,
+            },
             { id: "ignore", label: "Ignorarla." },
             { id: "personal_deal", label: "Resolverla por fuera de KroniX." },
           ],
@@ -39,7 +49,11 @@ export default function AcademyAppOperationPage() {
           id: "delivery",
           question: "¿Qué debe cuidar durante recogida y entrega?",
           options: [
-            { id: "instructions", label: "Productos, instrucciones, tiempos y comunicación.", correct: true },
+            {
+              id: "instructions",
+              label: "Productos, instrucciones, tiempos y comunicación.",
+              correct: true,
+            },
             { id: "only_speed", label: "Solo la velocidad." },
             { id: "nothing", label: "Nada, solo llegar." },
           ],

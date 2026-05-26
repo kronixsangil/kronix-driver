@@ -1,7 +1,13 @@
 //app\(driver)\lib\driverTrainingLegal.ts
 import { apiFetch } from "../../../lib/apiFetch";
 
-export type DriverTrainingType = "OPERATIONAL_SECURITY" | "ANTI_FRAUD";
+export type DriverTrainingType =
+  | "OPERATIONAL_SECURITY"
+  | "ANTI_FRAUD"
+  | "ACADEMY_WELCOME"
+  | "ACADEMY_ROAD_SAFETY"
+  | "ACADEMY_APP_OPERATION"
+  | "ACADEMY_FRAUD_PREVENTION";
 
 export async function checkDriverTrainingStatus(
   trainingType: DriverTrainingType,

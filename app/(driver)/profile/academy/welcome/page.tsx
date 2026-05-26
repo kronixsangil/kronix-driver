@@ -11,6 +11,8 @@ export default function AcademyWelcomePage() {
       icon="👋"
       videoTitle="Bienvenida a la cultura KroniX"
       videoUrl="https://www.youtube.com/embed/EGikbXGoZVc"
+      version="academy-welcome-v1"
+      trainingType="ACADEMY_WELCOME"
       checklist={[
         "Entiendo que KroniX busca un servicio respetuoso, seguro y confiable.",
         "Me comprometo a tratar bien a clientes, comercios y equipo KroniX.",
@@ -22,7 +24,11 @@ export default function AcademyWelcomePage() {
           question: "¿Qué busca KroniX en cada servicio?",
           options: [
             { id: "fast_only", label: "Solo rapidez." },
-            { id: "quality", label: "Servicio seguro, respetuoso y confiable.", correct: true },
+            {
+              id: "quality",
+              label: "Servicio seguro, respetuoso y confiable.",
+              correct: true,
+            },
             { id: "tips", label: "Solo recibir propinas." },
           ],
         },
@@ -39,7 +45,11 @@ export default function AcademyWelcomePage() {
           id: "presentation",
           question: "¿Por qué importa la presentación personal?",
           options: [
-            { id: "trust", label: "Porque genera confianza y buena imagen.", correct: true },
+            {
+              id: "trust",
+              label: "Porque genera confianza y buena imagen.",
+              correct: true,
+            },
             { id: "not_matter", label: "No importa." },
             { id: "only_uniform", label: "Solo importa si hay uniforme." },
           ],

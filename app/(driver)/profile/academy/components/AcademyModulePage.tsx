@@ -2,6 +2,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import {
+  submitDriverTrainingQuiz,
+  type DriverTrainingType,
+} from "../../../lib/driverTrainingLegal";
 
 type QuizQuestion = {
   id: string;
@@ -17,6 +21,8 @@ type Props = {
   videoUrl?: string;
   checklist: string[];
   quiz: QuizQuestion[];
+  version: string;
+  trainingType: DriverTrainingType;
 };
 
 export default function AcademyModulePage({
@@ -25,6 +31,8 @@ export default function AcademyModulePage({
   icon,
   videoTitle,
   videoUrl,
+  version,
+  trainingType,
   checklist,
   quiz,
 }: Props) {
@@ -32,6 +40,7 @@ export default function AcademyModulePage({
   const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>({});
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const checklistDone = checklist.every((item) => checkedItems[item]);
   const allAnswered = quiz.every((q) => !!answers[q.id]);
@@ -51,35 +60,72 @@ export default function AcademyModulePage({
 
   const canSubmit = videoChecked && checklistDone && allAnswered;
 
-  function handleSubmit() {
-    if (!canSubmit) return;
-    setSubmitted(true);
+  async function handleSubmit() {
+    if (!canSubmit || saving) return;
+
+    setSaving(true);
+
+    try {
+      const res = await submitDriverTrainingQuiz({
+        trainingType,
+        version,
+        answers: quiz.map((q) => ({
+          questionId: q.id,
+          selectedOptionId: answers[q.id],
+        })),
+      });
+
+      setSubmitted(true);
+
+      if (res?.passed) {
+        alert(
+          `Capacitación registrada correctamente. Puntaje: ${res.scorePercent}%.`
+        );
+        window.location.href = "/profile/academy";
+        return;
+      }
+
+      alert(
+        `No aprobaste todavía. Puntaje: ${
+          res?.scorePercent ?? score.pct
+        }%. Puedes intentarlo de nuevo.`
+      );
+    } catch (e: any) {
+      alert(e?.message || "No fue posible guardar la capacitación.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
     <div className="w-full bg-slate-50 p-0">
-      <div className="mx-auto w-full max-w-md px-0 pb-24 pt-0 space-y-4">
-        <div className="mx-2 overflow-hidden rounded-[28px] border border-emerald-100 bg-gradient-to-br from-emerald-600 via-emerald-700 to-slate-950 p-5 text-white shadow-xl">
-          <div className="text-[11px] font-black uppercase tracking-[0.18em] text-emerald-100">
-            KroniX Driver Academy
-          </div>
-
-          <div className="mt-3 flex items-start gap-3">
-            <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-white/15 text-3xl">
+      <div className="mx-auto w-full max-w-md px-0 pb-24 pt-0">
+        <div className="mx-0 overflow-hidden rounded-[24px] border border-emerald-100 bg-emerald-50">
+          <div className="flex items-start gap-4 p-4">
+            <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl border border-emerald-100 bg-white text-2xl">
               {icon}
             </div>
 
-            <div>
-              <h1 className="text-2xl font-black leading-7">{title}</h1>
-              <p className="mt-2 text-sm font-medium leading-5 text-emerald-50">
-                {subtitle}
-              </p>
+            <div className="min-w-0 flex-1">
+              <h1 className="text-lg font-black leading-6 text-slate-950">
+                {title}
+              </h1>
+
+              <div className="mt-3 inline-flex rounded-full border border-emerald-100 bg-white px-3 py-1 text-[11px] font-black text-slate-700">
+                📘 Versión: {version}
+              </div>
+
+              <div className="mt-2 inline-flex rounded-full border border-emerald-100 bg-white px-3 py-1 text-[11px] font-black text-slate-700">
+                🎓 Academia KroniX
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="mx-2 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="mx-0 mt-4 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="text-sm font-black text-slate-900">{videoTitle}</div>
+
+          <p className="mt-2 text-xs leading-5 text-slate-600">{subtitle}</p>
 
           <div className="mt-3 overflow-hidden rounded-2xl border border-slate-200 bg-slate-950">
             {videoUrl ? (
@@ -110,8 +156,10 @@ export default function AcademyModulePage({
           </label>
         </div>
 
-        <div className="mx-2 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="text-sm font-black text-slate-900">Checklist rápido</div>
+        <div className="mx-0 mt-4 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="text-sm font-black text-slate-900">
+            Checklist rápido
+          </div>
 
           <div className="mt-3 space-y-2">
             {checklist.map((item) => (
@@ -138,12 +186,15 @@ export default function AcademyModulePage({
           </div>
         </div>
 
-        <div className="mx-2 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="mx-0 mt-4 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="text-sm font-black text-slate-900">Quiz corto</div>
 
           <div className="mt-3 space-y-4">
             {quiz.map((q, index) => (
-              <div key={q.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+              <div
+                key={q.id}
+                className="rounded-2xl border border-slate-200 bg-slate-50 p-3"
+              >
                 <div className="text-xs font-black text-slate-900">
                   {index + 1}. {q.question}
                 </div>
@@ -190,13 +241,13 @@ export default function AcademyModulePage({
 
           <button
             type="button"
-            disabled={!canSubmit}
+            disabled={!canSubmit || saving}
             onClick={handleSubmit}
             className={`mt-4 w-full rounded-2xl px-4 py-3 text-sm font-black text-white ${
-              canSubmit ? "bg-emerald-600" : "bg-slate-300"
+              canSubmit && !saving ? "bg-emerald-600" : "bg-slate-300"
             }`}
           >
-            Enviar capacitación
+            {saving ? "Guardando..." : "Enviar capacitación"}
           </button>
         </div>
       </div>

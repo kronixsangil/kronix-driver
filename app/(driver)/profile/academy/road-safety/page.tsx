@@ -11,6 +11,8 @@ export default function AcademyRoadSafetyPage() {
       icon="🛵"
       videoTitle="Seguridad vial para conductores KroniX"
       videoUrl="https://www.youtube.com/embed/_ckcWtvlHO0"
+      version="academy-road-safety-v1"
+      trainingType="ACADEMY_ROAD_SAFETY"
       checklist={[
         "Entiendo que debo cumplir las normas de tránsito.",
         "No debo manipular el celular mientras conduzco.",
@@ -22,7 +24,11 @@ export default function AcademyRoadSafetyPage() {
           question: "¿Qué debe priorizar el conductor?",
           options: [
             { id: "speed", label: "La rapidez por encima de todo." },
-            { id: "safety", label: "La seguridad y las normas de tránsito.", correct: true },
+            {
+              id: "safety",
+              label: "La seguridad y las normas de tránsito.",
+              correct: true,
+            },
             { id: "shortcut", label: "Tomar cualquier atajo." },
           ],
         },
@@ -30,7 +36,11 @@ export default function AcademyRoadSafetyPage() {
           id: "phone",
           question: "¿Qué debe hacer antes de revisar el celular?",
           options: [
-            { id: "stop_safe", label: "Detenerse en un lugar seguro.", correct: true },
+            {
+              id: "stop_safe",
+              label: "Detenerse en un lugar seguro.",
+              correct: true,
+            },
             { id: "drive_phone", label: "Revisarlo mientras conduce." },
             { id: "ignore_traffic", label: "Bajar velocidad y mirar rápido." },
           ],
@@ -40,7 +50,11 @@ export default function AcademyRoadSafetyPage() {
           question: "Si ocurre un accidente, ¿qué debe hacer?",
           options: [
             { id: "hide", label: "Ocultarlo si puede continuar." },
-            { id: "report", label: "Reportarlo a KroniX y seguir el protocolo.", correct: true },
+            {
+              id: "report",
+              label: "Reportarlo a KroniX y seguir el protocolo.",
+              correct: true,
+            },
             { id: "finish_first", label: "Primero terminar el pedido siempre." },
           ],
         },

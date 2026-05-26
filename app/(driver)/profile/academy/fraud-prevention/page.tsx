@@ -11,6 +11,8 @@ export default function AcademyFraudPreventionPage() {
       icon="🔐"
       videoTitle="Prevención de fraude en KroniX"
       videoUrl="https://www.youtube.com/embed/dykJBcpnHVE"
+      version="academy-fraud-prevention-v1"
+      trainingType="ACADEMY_FRAUD_PREVENTION"
       checklist={[
         "Entiendo que mi cuenta es personal e intransferible.",
         "Entiendo que GPS falso, pedidos falsos o manipulación de pagos están prohibidos.",
@@ -22,7 +24,11 @@ export default function AcademyFraudPreventionPage() {
           question: "¿Está permitido compartir la cuenta?",
           options: [
             { id: "yes_family", label: "Sí, con familiares." },
-            { id: "no", label: "No, es personal e intransferible.", correct: true },
+            {
+              id: "no",
+              label: "No, es personal e intransferible.",
+              correct: true,
+            },
             { id: "sometimes", label: "Solo cuando estoy ocupado." },
           ],
         },
@@ -40,7 +46,11 @@ export default function AcademyFraudPreventionPage() {
           question: "¿Qué puede pasar si hay fraude?",
           options: [
             { id: "nothing", label: "Nada." },
-            { id: "block", label: "Bloqueo, revisión de pagos y acciones legales.", correct: true },
+            {
+              id: "block",
+              label: "Bloqueo, revisión de pagos y acciones legales.",
+              correct: true,
+            },
             { id: "bonus", label: "Puede recibir bonos." },
           ],
         },

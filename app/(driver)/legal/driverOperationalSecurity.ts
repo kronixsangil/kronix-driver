@@ -9,6 +9,9 @@ export const DRIVER_OPERATIONAL_SECURITY_TITLE =
   "Manual Operativo y Seguridad KroniX para Conductores";
 
 export const DRIVER_OPERATIONAL_SECURITY_TEXT = `
+
+Manual Operativo y Seguridad KroniX para Conductores
+
 1. PROPÓSITO DEL MANUAL
 
 Este Manual Operativo y Seguridad KroniX para Conductores establece las reglas mínimas de comportamiento, servicio, seguridad, respeto y actuación durante la prestación de servicios a través de la plataforma KroniX.

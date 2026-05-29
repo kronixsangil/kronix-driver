@@ -9,6 +9,9 @@ export const DRIVER_ANTI_FRAUD_TITLE =
   "Política Antifraude KroniX para Conductores";
 
 export const DRIVER_ANTI_FRAUD_TEXT = `
+
+Política Antifraude KroniX para Conductores
+
 1. PROPÓSITO
 
 La Política Antifraude KroniX para Conductores establece conductas prohibidas relacionadas con fraude, suplantación, manipulación operativa, uso indebido de pagos, ubicación falsa y abuso de la plataforma.

@@ -8,7 +8,10 @@ export const DRIVER_INDEPENDENCE_LAST_UPDATED = "22 de mayo de 2026";
 
 export const DRIVER_INDEPENDENCE_TEXT = `
 
+Acuerdo de Independencia para Conductores KroniX
+
 BLOQUE 1 — IDENTIDAD LEGAL, NATURALEZA DEL ACUERDO E INDEPENDENCIA DEL CONDUCTOR
+
 1. IDENTIDAD DE LA PLATAFORMA
 KroniX Tecnología S.A.S. (en adelante, “KroniX”) es una plataforma tecnológica de intermediación digital que permite la conexión entre usuarios, comercios y conductores independientes para facilitar servicios urbanos, domicilios, envíos, diligencias, compras, entregas y demás funcionalidades habilitadas dentro del ecosistema KroniX.
 KroniX actúa exclusivamente como proveedor tecnológico y de software, suministrando herramientas digitales para facilitar la interacción entre partes independientes.
@@ -39,6 +42,7 @@ El conductor podrá dejar de utilizar la Driver App cuando lo considere convenie
 El conductor conserva plena libertad para prestar servicios a terceros, utilizar otras aplicaciones, desarrollar actividades particulares, trabajar con otras plataformas, realizar actividades comerciales propias o ejercer cualquier otra ocupación lícita, siempre que ello no implique fraude, uso indebido de KroniX o incumplimiento de la legislación aplicable.
 8. ACEPTACIÓN EXPRESA
 Mediante la aceptación digital de este Acuerdo, el conductor declara haber leído, comprendido y aceptado que su relación con KroniX es de carácter tecnológico, independiente y no laboral.
+
 BLOQUE 2 — VEHÍCULO PROPIO, GASTOS OPERATIVOS Y RESPONSABILIDAD ECONÓMICA
 9. VEHÍCULO Y HERRAMIENTAS PROPIAS
 El conductor reconoce y acepta que utiliza vehículos, equipos, herramientas y medios propios para desarrollar su actividad operativa independiente dentro del ecosistema KroniX.
@@ -98,6 +102,7 @@ El conductor administra de manera autónoma sus ingresos, costos, tiempos y acti
 KroniX no garantiza ingresos mínimos, disponibilidad permanente de servicios, volumen fijo de solicitudes, estabilidad económica, continuidad operativa ni remuneración periódica.
 15. ACEPTACIÓN EXPRESA DE RESPONSABILIDAD OPERATIVA
 El conductor declara comprender y aceptar que desarrolla una actividad independiente utilizando medios propios, bajo su propia responsabilidad económica, técnica y operativa.
+
 BLOQUE 3 — LIBERTAD OPERATIVA, DISPONIBILIDAD Y USO VOLUNTARIO DE SERVICIOS
 16. LIBERTAD DE CONEXIÓN Y DESCONEXIÓN
 El conductor tiene plena libertad para conectarse y desconectarse de la plataforma en cualquier momento, conforme a su propia disponibilidad, interés y criterio independiente.
@@ -146,6 +151,7 @@ El conductor no está obligado a mantenerse activo permanentemente dentro de Kro
 Asimismo, KroniX tampoco está obligado a suministrar solicitudes constantes ni actividad continua al conductor.
 24. RECONOCIMIENTO DE RELACIÓN TECNOLÓGICA
 El conductor reconoce expresamente que la relación existente entre las partes corresponde exclusivamente al uso de una plataforma tecnológica de intermediación digital y no a una relación laboral subordinada.
+
 BLOQUE 4 — USO DE LA PLATAFORMA Y CONDUCTA OPERATIVA
 25. USO ADECUADO DE LA PLATAFORMA
 El conductor se compromete a utilizar la plataforma KroniX de manera responsable, ética, legal y conforme a los presentes términos, absteniéndose de realizar actividades que puedan afectar:
@@ -241,6 +247,7 @@ KroniX podrá suspender, limitar o finalizar el acceso del conductor a la plataf
 Estas medidas podrán aplicarse de manera preventiva cuando KroniX lo considere razonablemente necesario.
 34. AUSENCIA DE EXCLUSIVIDAD
 El conductor podrá operar simultáneamente con otras plataformas, empresas o actividades económicas, siempre que ello no afecte el cumplimiento de sus obligaciones dentro del ecosistema KroniX ni implique conductas fraudulentas o conflictos operativos graves.
+
 BLOQUE 5 — PROTECCIÓN LEGAL, LIMITACIÓN DE RESPONSABILIDAD Y NATURALEZA TECNOLÓGICA
 35. NATURALEZA TECNOLÓGICA DE KRONIX
 El conductor reconoce y acepta que KroniX es una plataforma tecnológica de intermediación digital que facilita la conexión entre usuarios, comercios y conductores independientes mediante herramientas tecnológicas.
@@ -313,6 +320,7 @@ KroniX podrá modificar funcionalidades, procesos, herramientas, tarifas, polít
 KroniX podrá colaborar con autoridades judiciales, administrativas, regulatorias o de policía cuando exista obligación legal, requerimiento formal o necesidad razonable relacionada con investigaciones, seguridad o cumplimiento normativo.
 43. ACEPTACIÓN EXPRESA
 El conductor declara haber leído, comprendido y aceptado integralmente el presente Acuerdo de Independencia, reconociendo expresamente la naturaleza tecnológica e independiente de la relación existente con KroniX.
+
 BLOQUE 6 — CONFIDENCIALIDAD, DATOS Y PROPIEDAD TECNOLÓGICA
 44. INFORMACIÓN CONFIDENCIAL
 El conductor reconoce que durante el uso de la plataforma podrá tener acceso a información operativa, comercial o tecnológica perteneciente a KroniX, usuarios, comercios o terceros aliados.
@@ -382,6 +390,7 @@ KroniX podrá conservar registros digitales, históricos operativos, trazabilida
 53. SEGURIDAD DIGITAL
 El conductor será responsable de mantener la confidencialidad de sus credenciales de acceso, dispositivos y métodos de autenticación.
 Toda actividad realizada desde su cuenta se presumirá realizada por el propio conductor salvo evidencia razonable en contrario.
+
 BLOQUE 7 — VIGENCIA, MODIFICACIONES Y JURISDICCIÓN
 54. VIGENCIA DEL ACUERDO
 El presente Acuerdo de Independencia permanecerá vigente mientras el conductor mantenga acceso activo o utilice la plataforma KroniX, independientemente de períodos de inactividad temporal.
@@ -418,6 +427,7 @@ El conductor declara expresamente que:
 •	entiende la naturaleza tecnológica e independiente de KroniX,
 •	reconoce que no existe relación laboral subordinada,
 •	y acepta voluntariamente las condiciones aquí establecidas para utilizar la plataforma KroniX Driver.
+
 BLOQUE 8 — DECLARACIONES FINALES Y ACEPTACIÓN ELECTRÓNICA
 64. ACEPTACIÓN ELECTRÓNICA
 El conductor reconoce y acepta que la manifestación de aceptación realizada mediante botones, casillas de verificación, validaciones digitales, autenticación electrónica o cualquier mecanismo tecnológico habilitado por KroniX tendrá plena validez jurídica y producirá efectos vinculantes conforme a la legislación aplicable.
@@ -480,6 +490,7 @@ Al continuar utilizando la plataforma KroniX Driver, el conductor declara que:
 •	acepta voluntariamente sus condiciones,
 •	reconoce la naturaleza independiente de su actividad,
 •	y manifiesta su consentimiento libre, informado y expreso respecto a todas las disposiciones aquí establecidas.
+
 BLOQUE 9 — FIRMA DIGITAL Y CONSENTIMIENTO INFORMADO
 73. CONSENTIMIENTO LIBRE E INFORMADO
 El conductor declara que acepta el presente Acuerdo de Independencia de manera:
@@ -545,6 +556,7 @@ El conductor declara expresamente que:
 •	entiende sus implicaciones legales,
 •	reconoce la inexistencia de relación laboral subordinada,
 •	y acepta de manera libre y voluntaria todas las condiciones aquí establecidas para operar dentro de la plataforma KroniX Driver.
+
 BLOQUE 10 — DISPOSICIONES COMPLEMENTARIAS DE OPERACIÓN INDEPENDIENTE
 83. AUTONOMÍA EN LA PRESTACIÓN DEL SERVICIO
 El conductor conserva plena autonomía para decidir:
@@ -589,6 +601,7 @@ El conductor reconoce que KroniX podrá aplicar medidas preventivas orientadas a
 En caso de conflicto entre intereses operativos individuales y medidas razonables de seguridad o cumplimiento normativo, KroniX podrá priorizar la protección del ecosistema, la legalidad y la integridad de la plataforma.
 92. CIERRE DEL ACUERDO
 El presente Acuerdo de Independencia constituye un documento complementario esencial dentro del proceso de onboarding de KroniX Driver y forma parte integral del marco legal aplicable al uso de la plataforma por parte de conductores independientes.
+
 BLOQUE 11 — DECLARACIONES REFORZADAS DE INDEPENDENCIA Y AUSENCIA DE SUBORDINACIÓN
 93. AUSENCIA DE JORNADA LABORAL
 El conductor reconoce que no existe jornada laboral impuesta por KroniX.
@@ -620,6 +633,7 @@ El conductor reconoce que no tiene derecho frente a KroniX a:
 Las partes acuerdan expresamente que el presente acuerdo deberá interpretarse bajo principios de autonomía, independencia operativa y naturaleza tecnológica de intermediación digital.
 98. RATIFICACIÓN FINAL DE NATURALEZA INDEPENDIENTE
 El conductor ratifica expresamente que comprende y acepta que su participación dentro de KroniX Driver corresponde exclusivamente a una actividad independiente facilitada mediante una plataforma tecnológica de intermediación digital.
+
 BLOQUE 12 — SEGURIDAD VIAL, RESPONSABILIDAD PERSONAL Y CUMPLIMIENTO NORMATIVO
 99. CUMPLIMIENTO DE NORMAS DE TRÁNSITO
 El conductor se compromete a cumplir en todo momento las normas de tránsito, movilidad, seguridad vial y regulación aplicable en las jurisdicciones donde opere.
@@ -679,6 +693,7 @@ Queda estrictamente prohibido utilizar la plataforma para facilitar actividades 
 KroniX podrá implementar medidas preventivas relacionadas con seguridad vial, monitoreo operativo, validaciones y control de riesgos con el objetivo de proteger la integridad del ecosistema.
 109. DECLARACIÓN FINAL DE RESPONSABILIDAD PERSONAL
 El conductor reconoce que toda actividad realizada mediante su cuenta dentro de KroniX Driver será ejecutada bajo su propia responsabilidad, autonomía e independencia operativa.
+
 BLOQUE 13 — FRAUDE, SEGURIDAD DEL ECOSISTEMA Y PROTECCIÓN OPERATIVA
 110. PREVENCIÓN DE FRAUDE
 El conductor reconoce que KroniX implementa mecanismos tecnológicos y operativos destinados a prevenir:
@@ -752,6 +767,7 @@ KroniX podrá conservar registros, trazabilidad, logs, ubicaciones, eventos tecn
 En casos de fraude, delitos informáticos, riesgos de seguridad o requerimientos legales, KroniX podrá colaborar con autoridades judiciales, regulatorias o de policía conforme a la legislación aplicable.
 121. DECLARACIÓN FINAL DE USO LEGÍTIMO
 El conductor declara que utilizará KroniX Driver exclusivamente para fines legítimos, legales y compatibles con la naturaleza tecnológica de la plataforma.
+
 BLOQUE 14 — TECNOLOGÍA, DISPONIBILIDAD DIGITAL Y LIMITACIONES DEL SISTEMA
 122. DEPENDENCIA TECNOLÓGICA
 El conductor reconoce que el funcionamiento de KroniX Driver depende de múltiples componentes tecnológicos, incluyendo:
@@ -833,6 +849,7 @@ KroniX podrá registrar eventos tecnológicos relacionados con:
 KroniX se reserva el derecho de implementar nuevas tecnologías, automatizaciones, inteligencia artificial, modelos antifraude y herramientas de monitoreo para proteger el ecosistema y optimizar la operación.
 132. DECLARACIÓN FINAL SOBRE TECNOLOGÍA
 El conductor reconoce que KroniX Driver constituye una plataforma tecnológica digital dinámica y en constante evolución, cuya operación puede variar conforme a necesidades técnicas, regulatorias y de seguridad.
+
 BLOQUE 15 — DISPOSICIONES FINALES, INTERPRETACIÓN Y CIERRE CONTRACTUAL
 133. INTERPRETACIÓN INTEGRAL
 El presente Acuerdo de Independencia deberá interpretarse de manera integral y coherente con la naturaleza tecnológica, autónoma e independiente de la relación entre KroniX y el conductor.
@@ -887,6 +904,7 @@ Al aceptar el presente Acuerdo de Independencia, el conductor declara de forma e
 •	y acepta voluntariamente las condiciones establecidas por KroniX Driver.
 143. CIERRE DEL DOCUMENTO
 El presente Acuerdo de Independencia para Conductores KroniX constituye parte integral del onboarding legal obligatorio para operar dentro del ecosistema KroniX Driver.
+
 BLOQUE 16 — DECLARACIÓN FINAL INTEGRAL Y CIERRE DEFINITIVO DEL ACUERDO
 144. ACEPTACIÓN DE POLÍTICAS Y DOCUMENTOS COMPLEMENTARIOS
 El conductor declara conocer y aceptar adicionalmente:

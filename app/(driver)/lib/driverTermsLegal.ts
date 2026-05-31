@@ -1,18 +1,32 @@
 //app\(driver)\lib\driverTermsLegal.ts
 import { apiFetch } from "../../../lib/apiFetch";
-import {
-  getCurrentDriverLegalDocument,
-  type DriverLegalDocument,
-} from "./driverPrivacyLegal";
 
-export const DRIVER_TERMS_DOCUMENT_TYPE = "DRIVER_TERMS";
-export const DRIVER_TERMS_FALLBACK_VERSION = "driver-terms-v1-2026-05-21";
 export const DRIVER_TERMS_LOCAL_KEY = "kronix_driver_terms_acceptance";
+export const DRIVER_TERMS_FALLBACK_VERSION = "driver-terms-v1-2026-05-21";
 
-export type { DriverLegalDocument };
+export type DriverLegalDocument = {
+  id: string;
+  documentType: "DRIVER_TERMS";
+  version: string;
+  title: string;
+  description?: string | null;
+  content?: string | null;
+  isActive: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+};
 
 export async function getCurrentDriverTermsDocument() {
-  return getCurrentDriverLegalDocument(DRIVER_TERMS_DOCUMENT_TYPE);
+  const res = await apiFetch<{
+    ok: boolean;
+    documentType: string;
+    document: DriverLegalDocument | null;
+  }>("/legal/documents/current/DRIVER_TERMS", {
+    method: "GET",
+    cache: "no-store",
+  });
+
+  return res.document;
 }
 
 export async function getCurrentDriverTermsVersion() {
@@ -25,7 +39,6 @@ export function saveDriverTermsLocal(version: string) {
     localStorage.setItem(
       DRIVER_TERMS_LOCAL_KEY,
       JSON.stringify({
-        documentType: DRIVER_TERMS_DOCUMENT_TYPE,
         version,
         acceptedAt: new Date().toISOString(),
       })
@@ -33,14 +46,21 @@ export function saveDriverTermsLocal(version: string) {
   } catch {}
 }
 
+export function hasDriverTermsLocal(version: string) {
+  try {
+    const raw = localStorage.getItem(DRIVER_TERMS_LOCAL_KEY);
+    const parsed = raw ? JSON.parse(raw) : null;
+    return parsed?.version === version;
+  } catch {
+    return false;
+  }
+}
+
 export async function checkDriverTermsStatus() {
   const version = await getCurrentDriverTermsVersion();
 
-  const res = await apiFetch<{
-    ok: boolean;
-    accepted: boolean;
-  }>(
-    `/legal/status?documentType=${DRIVER_TERMS_DOCUMENT_TYPE}&version=${encodeURIComponent(
+  const res = await apiFetch<{ ok: boolean; accepted: boolean }>(
+    `/legal/status?documentType=DRIVER_TERMS&version=${encodeURIComponent(
       version
     )}`,
     {
@@ -56,17 +76,15 @@ export async function checkDriverTermsStatus() {
   return !!res?.accepted;
 }
 
-export async function acceptDriverTermsBackend(version?: string) {
-  const finalVersion = version || (await getCurrentDriverTermsVersion());
-
+export async function acceptDriverTermsBackend(version: string) {
   await apiFetch("/legal/accept", {
     method: "POST",
     body: JSON.stringify({
-      documentType: DRIVER_TERMS_DOCUMENT_TYPE,
-      version: finalVersion,
+      documentType: "DRIVER_TERMS",
+      version,
       source: "DRIVER_APP",
     }),
   });
 
-  saveDriverTermsLocal(finalVersion);
+  saveDriverTermsLocal(version);
 }

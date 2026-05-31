@@ -3,22 +3,32 @@
 
 import { useEffect, useState } from "react";
 import {
-  DRIVER_TERMS_LAST_UPDATED,
-  DRIVER_TERMS_VERSION,
-} from "../../legal/driverTerms";
+  checkDriverTermsStatus,
+  getCurrentDriverTermsDocument,
+  type DriverLegalDocument,
+} from "../../lib/driverTermsLegal";
 import DriverTermsModal from "./DriverTermsModal";
 
 export default function DriverLegalCard() {
   const [open, setOpen] = useState(false);
   const [accepted, setAccepted] = useState(false);
+  const [checking, setChecking] = useState(true);
+  const [doc, setDoc] = useState<DriverLegalDocument | null>(null);
 
-  function refreshStatus() {
+  async function refreshStatus() {
+    setChecking(true);
+
     try {
-      const raw = localStorage.getItem("kronix_driver_terms_acceptance");
-      const parsed = raw ? JSON.parse(raw) : null;
-      setAccepted(parsed?.version === DRIVER_TERMS_VERSION);
+      const currentDoc = await getCurrentDriverTermsDocument();
+      setDoc(currentDoc);
+
+      const ok = await checkDriverTermsStatus();
+      setAccepted(ok);
     } catch {
+      setDoc(null);
       setAccepted(false);
+    } finally {
+      setChecking(false);
     }
   }
 
@@ -36,6 +46,14 @@ export default function DriverLegalCard() {
     );
   }
 
+  const updatedLabel = doc?.updatedAt
+    ? new Date(doc.updatedAt).toLocaleDateString("es-CO", {
+        year: "numeric",
+        month: "long",
+        day: "2-digit",
+      })
+    : "Legal Center";
+
   return (
     <div className="mx-2 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
       <div className="flex items-start justify-between gap-3">
@@ -45,7 +63,7 @@ export default function DriverLegalCard() {
           </div>
 
           <div className="mt-1 text-base font-extrabold text-gray-900">
-            Términos y Condiciones
+            {doc?.title || "Términos y Condiciones"}
           </div>
 
           <div className="mt-1 text-[12px] text-gray-600">
@@ -60,7 +78,7 @@ export default function DriverLegalCard() {
               : "bg-amber-50 text-amber-700 ring-amber-100"
           }`}
         >
-          {accepted ? "Aceptado" : "Pendiente"}
+          {checking ? "..." : accepted ? "Aceptado" : "Pendiente"}
         </div>
       </div>
 
@@ -68,14 +86,14 @@ export default function DriverLegalCard() {
         <div className="text-[12px] text-slate-600">
           Versión vigente:{" "}
           <span className="font-bold text-slate-800">
-            {DRIVER_TERMS_VERSION}
+            {doc?.version || "Cargando..."}
           </span>
         </div>
 
         <div className="mt-1 text-[12px] text-slate-600">
           Actualizado:{" "}
           <span className="font-bold text-slate-800">
-            {DRIVER_TERMS_LAST_UPDATED}
+            {updatedLabel}
           </span>
         </div>
       </div>

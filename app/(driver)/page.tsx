@@ -22,7 +22,6 @@ import { driverFetchAvailableOrders } from "../(driver)/lib/driverOrderApi";
 import { playDriverSound } from "../(driver)/lib/sound";
 import { ensureNotifyPermission, showNotify } from "../(driver)/lib/notify";
 import { useDriverCity } from "./components/DriverCityContext";
-import { DRIVER_TERMS_VERSION } from "./legal/driverTerms";
 import { DRIVER_PRIVACY_VERSION } from "./legal/driverPrivacy";
 import {
   checkDriverPrivacyStatus,
@@ -35,6 +34,7 @@ import {
 } from "./lib/driverIndependenceLegal";
 
 import { DRIVER_INDEPENDENCE_VERSION } from "./legal/driverIndependence";
+import { checkDriverTermsStatus } from "./lib/driverTermsLegal";
 
 
 
@@ -807,77 +807,17 @@ const [checkingPrivacy, setCheckingPrivacy] = useState(true);
   let mounted = true;
 
   async function checkTerms() {
-    try {
-      setCheckingTerms(true);
+    setCheckingTerms(true);
 
-      // 1. Verificación REAL backend
-      const res = await apiFetch<{
-        ok: boolean;
-        accepted: boolean;
-      }>(
-        `/legal/status?documentType=DRIVER_TERMS&version=${encodeURIComponent(
-          DRIVER_TERMS_VERSION
-        )}`,
-        {
-          method: "GET",
-          cache: "no-store",
-        }
-      );
+    try {
+      const accepted = await checkDriverTermsStatus();
 
       if (!mounted) return;
 
-      if (res?.accepted) {
-        setTermsAccepted(true);
-
-        // cache local UX
-        localStorage.setItem(
-          "kronix_driver_terms_acceptance",
-          JSON.stringify({
-            version: DRIVER_TERMS_VERSION,
-            acceptedAt: new Date().toISOString(),
-          })
-        );
-
-        return;
-      }
-
-      // 2. fallback localStorage
-      const raw = localStorage.getItem(
-        "kronix_driver_terms_acceptance"
-      );
-
-      if (!raw) {
-        setTermsAccepted(false);
-        return;
-      }
-
-      const parsed = JSON.parse(raw);
-
-      setTermsAccepted(
-        parsed?.version === DRIVER_TERMS_VERSION
-      );
+      setTermsAccepted(accepted);
     } catch {
       if (!mounted) return;
-
-      // fallback local UX
-      try {
-        const raw = localStorage.getItem(
-          "kronix_driver_terms_acceptance"
-        );
-
-        if (!raw) {
-          setTermsAccepted(false);
-          return;
-        }
-
-        const parsed = JSON.parse(raw);
-
-        setTermsAccepted(
-          parsed?.version === DRIVER_TERMS_VERSION
-        );
-      } catch {
-        setTermsAccepted(false);
-      }
+      setTermsAccepted(false);
     } finally {
       if (mounted) {
         setCheckingTerms(false);
@@ -891,7 +831,6 @@ const [checkingPrivacy, setCheckingPrivacy] = useState(true);
     mounted = false;
   };
 }, []);
-
 useEffect(() => {
   try {
     const raw = localStorage.getItem("kronix_driver_privacy_acceptance");

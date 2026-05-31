@@ -3,12 +3,9 @@
 
 import { useEffect, useState } from "react";
 import {
-  DRIVER_INDEPENDENCE_LAST_UPDATED,
-  DRIVER_INDEPENDENCE_VERSION,
-} from "../../legal/driverIndependence";
-import {
   checkDriverIndependenceStatus,
-  hasDriverIndependenceLocal,
+  getCurrentDriverIndependenceDocument,
+  type DriverLegalDocument,
 } from "../../lib/driverIndependenceLegal";
 import DriverIndependenceModal from "./DriverIndependenceModal";
 
@@ -17,6 +14,20 @@ type Props = {
   onAcceptedRedirect?: string;
 };
 
+function formatLegalDate(value?: string | null) {
+  if (!value) return "Legal Center";
+
+  const d = new Date(value);
+
+  if (Number.isNaN(d.getTime())) return "Legal Center";
+
+  return d.toLocaleDateString("es-CO", {
+    year: "numeric",
+    month: "long",
+    day: "2-digit",
+  });
+}
+
 export default function DriverIndependenceCard({
   autoOpen = false,
   onAcceptedRedirect,
@@ -24,18 +35,23 @@ export default function DriverIndependenceCard({
   const [open, setOpen] = useState(false);
   const [accepted, setAccepted] = useState(false);
   const [checking, setChecking] = useState(true);
+  const [doc, setDoc] = useState<DriverLegalDocument | null>(null);
 
   async function refreshStatus() {
     setChecking(true);
 
     try {
+      const currentDoc = await getCurrentDriverIndependenceDocument();
+      setDoc(currentDoc);
+
       const ok = await checkDriverIndependenceStatus();
       setAccepted(ok);
+
       return ok;
     } catch {
-      const localOk = hasDriverIndependenceLocal();
-      setAccepted(localOk);
-      return localOk;
+      setDoc(null);
+      setAccepted(false);
+      return false;
     } finally {
       setChecking(false);
     }
@@ -80,11 +96,12 @@ export default function DriverIndependenceCard({
           </div>
 
           <div className="mt-1 text-base font-extrabold text-gray-900">
-            Acuerdo de Independencia
+            {doc?.title || "Acuerdo de Independencia"}
           </div>
 
           <div className="mt-1 text-[12px] text-gray-600">
-            Autonomía operativa, no subordinación y relación independiente.
+            {doc?.description ||
+              "Autonomía operativa, no subordinación y relación independiente."}
           </div>
         </div>
 
@@ -103,14 +120,14 @@ export default function DriverIndependenceCard({
         <div className="text-[12px] text-slate-600">
           Versión vigente:{" "}
           <span className="font-bold text-slate-800">
-            {DRIVER_INDEPENDENCE_VERSION}
+            {doc?.version || "Cargando..."}
           </span>
         </div>
 
         <div className="mt-1 text-[12px] text-slate-600">
           Actualizado:{" "}
           <span className="font-bold text-slate-800">
-            {DRIVER_INDEPENDENCE_LAST_UPDATED}
+            {formatLegalDate(doc?.updatedAt)}
           </span>
         </div>
       </div>

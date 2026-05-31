@@ -1,15 +1,12 @@
 //app\(driver)\profile\components\DriverIndependenceModal.tsx
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  DRIVER_INDEPENDENCE_LAST_UPDATED,
-  DRIVER_INDEPENDENCE_TEXT,
-  DRIVER_INDEPENDENCE_TITLE,
-  DRIVER_INDEPENDENCE_VERSION,
-} from "../../legal/driverIndependence";
-
-import { acceptDriverIndependenceBackend } from "../../lib/driverIndependenceLegal";
+  acceptDriverIndependenceBackend,
+  getCurrentDriverIndependenceDocument,
+  type DriverLegalDocument,
+} from "../../lib/driverIndependenceLegal";
 
 type Props = {
   open: boolean;
@@ -27,54 +24,70 @@ export default function DriverIndependenceModal({
   const [reachedBottom, setReachedBottom] = useState(false);
   const [checked, setChecked] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [loadingDoc, setLoadingDoc] = useState(false);
+  const [legalDoc, setLegalDoc] = useState<DriverLegalDocument | null>(null);
 
-  const paragraphs = useMemo(
-    () =>
-      DRIVER_INDEPENDENCE_TEXT.split("\n").filter(
-        (line) => line.trim().length > 0
-      ),
-    []
-  );
+  const paragraphs = useMemo(() => {
+    return String(legalDoc?.content ?? "")
+      .split("\n")
+      .filter((line) => line.trim().length > 0);
+  }, [legalDoc?.content]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    setReachedBottom(false);
+    setChecked(false);
+    setSaving(false);
+    setLoadingDoc(true);
+
+    getCurrentDriverIndependenceDocument()
+      .then((doc) => setLegalDoc(doc))
+      .catch(() => setLegalDoc(null))
+      .finally(() => setLoadingDoc(false));
+  }, [open]);
 
   if (!open) return null;
+
+  const title = legalDoc?.title || "Acuerdo de Independencia para Conductores KroniX";
+  const version = legalDoc?.version || "Versión vigente";
+  const lastUpdated = legalDoc?.updatedAt
+    ? new Date(legalDoc.updatedAt).toLocaleDateString("es-CO", {
+        year: "numeric",
+        month: "long",
+        day: "2-digit",
+      })
+    : "Legal Center";
 
   function handleScroll() {
     const el = scrollRef.current;
     if (!el) return;
 
-    if (
-      el.scrollTop + el.clientHeight >=
-      el.scrollHeight - 24
-    ) {
+    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 24) {
       setReachedBottom(true);
     }
   }
 
   async function handleAccept() {
-    if (!reachedBottom || !checked || saving) return;
+    if (!reachedBottom || !checked || saving || !legalDoc?.version) return;
 
     setSaving(true);
 
     try {
-      await acceptDriverIndependenceBackend();
+      await acceptDriverIndependenceBackend(legalDoc.version);
 
-      alert(
-        "Gracias. El Acuerdo de Independencia fue aceptado correctamente."
-      );
+      alert("Gracias. El Acuerdo de Independencia fue aceptado correctamente.");
 
       onAccepted();
       onClose();
     } catch {
-      alert(
-        "No fue posible registrar la aceptación del acuerdo."
-      );
+      alert("No fue posible registrar la aceptación del acuerdo.");
     } finally {
       setSaving(false);
     }
   }
 
-  const canAccept =
-    reachedBottom && checked && !saving;
+  const canAccept = reachedBottom && checked && !saving && !!legalDoc?.version;
 
   return (
     <div className="mx-0 overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-xl">
@@ -86,16 +99,16 @@ export default function DriverIndependenceModal({
 
           <div className="min-w-0 flex-1">
             <h2 className="text-[18px] font-black leading-5 text-slate-950">
-              {DRIVER_INDEPENDENCE_TITLE}
+              {title}
             </h2>
 
             <div className="mt-3 flex flex-col gap-1.5">
               <span className="w-fit rounded-full bg-white px-3 py-1 text-[10px] font-black text-slate-700 ring-1 ring-blue-100">
-                📄 Versión: {DRIVER_INDEPENDENCE_VERSION}
+                📄 Versión: {version}
               </span>
 
               <span className="w-fit rounded-full bg-white px-3 py-1 text-[10px] font-black text-slate-700 ring-1 ring-blue-100">
-                📅 Actualizado: {DRIVER_INDEPENDENCE_LAST_UPDATED}
+                📅 Actualizado: {lastUpdated}
               </span>
             </div>
           </div>
@@ -107,34 +120,41 @@ export default function DriverIndependenceModal({
         onScroll={handleScroll}
         className="max-h-[48dvh] overflow-y-auto px-4 py-4 text-[12.5px] leading-5 text-slate-700 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
-        {paragraphs.map((p, index) => {
-          const clean = p.replace(/^#+\s?/, "").trim();
+        {loadingDoc ? (
+          <p className="mb-3 text-[12.5px] font-semibold leading-5 text-slate-600">
+            Cargando documento legal vigente desde Legal Center...
+          </p>
+        ) : paragraphs.length === 0 ? (
+          <p className="mb-3 text-[12.5px] font-semibold leading-5 text-amber-700">
+            No se pudo cargar el acuerdo vigente. Intenta nuevamente.
+          </p>
+        ) : (
+          paragraphs.map((p, index) => {
+            const clean = p.replace(/^#+\s?/, "").trim();
 
-          const isTitle =
-            clean.startsWith("BLOQUE") ||
-            /^[0-9]+[\.\)]\s/.test(clean) ||
-            (clean.length < 90 &&
-              clean.toUpperCase() === clean);
+            const isTitle =
+              clean.startsWith("BLOQUE") ||
+              /^[0-9]+[\.\)]\s/.test(clean) ||
+              (clean.length < 90 && clean.toUpperCase() === clean);
 
-          const isBullet =
-            clean.startsWith("•") ||
-            clean.startsWith("-");
+            const isBullet = clean.startsWith("•") || clean.startsWith("-");
 
-          return (
-            <p
-              key={`${clean}-${index}`}
-              className={
-                isTitle
-                  ? "mb-3 mt-5 text-[14px] font-black leading-5 text-slate-950 first:mt-0"
-                  : isBullet
-                  ? "mb-1.5 pl-2 text-[12.5px] font-semibold leading-5 text-slate-600"
-                  : "mb-3 text-[12.5px] font-medium leading-5 text-slate-700"
-              }
-            >
-              {clean}
-            </p>
-          );
-        })}
+            return (
+              <p
+                key={`${clean}-${index}`}
+                className={
+                  isTitle
+                    ? "mb-3 mt-5 text-[14px] font-black leading-5 text-slate-950 first:mt-0"
+                    : isBullet
+                      ? "mb-1.5 pl-2 text-[12.5px] font-semibold leading-5 text-slate-600"
+                      : "mb-3 text-[12.5px] font-medium leading-5 text-slate-700"
+                }
+              >
+                {clean}
+              </p>
+            );
+          })
+        )}
 
         <div className="mt-4 rounded-2xl border border-emerald-100 bg-emerald-50 p-3 text-xs font-black text-emerald-800">
           ✅ Has llegado al final del documento.
@@ -160,14 +180,13 @@ export default function DriverIndependenceModal({
             type="checkbox"
             checked={checked}
             disabled={!reachedBottom}
-            onChange={(e) =>
-              setChecked(e.target.checked)
-            }
+            onChange={(e) => setChecked(e.target.checked)}
             className="mt-1 h-4 w-4 accent-emerald-600"
           />
 
           <span className="text-[11.5px] font-semibold leading-5 text-slate-700">
-            Declaro que he leído, comprendido y acepto el Acuerdo de Independencia para Conductores KroniX.
+            Declaro que he leído, comprendido y acepto el Acuerdo de
+            Independencia para Conductores KroniX.
           </span>
         </label>
 
@@ -185,9 +204,7 @@ export default function DriverIndependenceModal({
             disabled={!canAccept}
             onClick={handleAccept}
             className={`flex-1 rounded-2xl px-4 py-3 text-sm font-black text-white ${
-              canAccept
-                ? "bg-emerald-600"
-                : "bg-slate-300"
+              canAccept ? "bg-emerald-600" : "bg-slate-300"
             }`}
           >
             {saving ? "Guardando..." : "Aceptar"}

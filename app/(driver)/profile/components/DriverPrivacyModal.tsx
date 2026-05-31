@@ -1,14 +1,13 @@
 //app\(driver)\profile\components\DriverPrivacyModal.tsx
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  DRIVER_PRIVACY_LAST_UPDATED,
-  DRIVER_PRIVACY_TEXT,
-  DRIVER_PRIVACY_TITLE,
-  DRIVER_PRIVACY_VERSION,
-} from "../../legal/driverPrivacy";
-import { acceptDriverPrivacyBackend } from "../../lib/driverPrivacyLegal";
+  acceptDriverPrivacyBackend,
+  getCurrentDriverLegalDocument,
+  DRIVER_PRIVACY_DOCUMENT_TYPE,
+  type DriverLegalDocument,
+} from "../../lib/driverPrivacyLegal";
 
 type Props = {
   open: boolean;
@@ -16,31 +15,67 @@ type Props = {
   onAccepted: () => void;
 };
 
-export default function DriverPrivacyModal({ open, onClose, onAccepted }: Props) {
+export default function DriverPrivacyModal({
+  open,
+  onClose,
+  onAccepted,
+}: Props) {
   const scrollRef = useRef<HTMLDivElement | null>(null);
+
   const [reachedBottom, setReachedBottom] = useState(false);
   const [checked, setChecked] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [loadingDoc, setLoadingDoc] = useState(false);
+  const [legalDoc, setLegalDoc] = useState<DriverLegalDocument | null>(null);
 
-  const paragraphs = useMemo(
-    () => DRIVER_PRIVACY_TEXT.split("\n").filter((line) => line.trim().length > 0),
-    []
-  );
+  const paragraphs = useMemo(() => {
+    return String(legalDoc?.content ?? "")
+      .split("\n")
+      .filter((line) => line.trim().length > 0);
+  }, [legalDoc?.content]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    setReachedBottom(false);
+    setChecked(false);
+    setSaving(false);
+    setLoadingDoc(true);
+
+    getCurrentDriverLegalDocument(DRIVER_PRIVACY_DOCUMENT_TYPE)
+      .then((doc) => setLegalDoc(doc))
+      .catch(() => setLegalDoc(null))
+      .finally(() => setLoadingDoc(false));
+  }, [open]);
 
   if (!open) return null;
+
+  const title = legalDoc?.title || "Política de Privacidad para Conductores KroniX";
+  const version = legalDoc?.version || "Versión vigente";
+  const lastUpdated = legalDoc?.updatedAt
+    ? new Date(legalDoc.updatedAt).toLocaleDateString("es-CO", {
+        year: "numeric",
+        month: "long",
+        day: "2-digit",
+      })
+    : "Legal Center";
 
   function handleScroll() {
     const el = scrollRef.current;
     if (!el) return;
-    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 24) setReachedBottom(true);
+
+    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 24) {
+      setReachedBottom(true);
+    }
   }
 
   async function handleAccept() {
-    if (!reachedBottom || !checked || saving) return;
+    if (!reachedBottom || !checked || saving || !legalDoc?.version) return;
+
     setSaving(true);
 
     try {
-      await acceptDriverPrivacyBackend();
+      await acceptDriverPrivacyBackend(legalDoc.version);
       alert("Gracias. La Política de Privacidad fue aceptada correctamente.");
       onAccepted();
       onClose();
@@ -51,7 +86,7 @@ export default function DriverPrivacyModal({ open, onClose, onAccepted }: Props)
     }
   }
 
-  const canAccept = reachedBottom && checked && !saving;
+  const canAccept = reachedBottom && checked && !saving && !!legalDoc?.version;
 
   return (
     <div className="mx-0 overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-xl">
@@ -63,15 +98,16 @@ export default function DriverPrivacyModal({ open, onClose, onAccepted }: Props)
 
           <div className="min-w-0 flex-1">
             <h2 className="text-[18px] font-black leading-5 text-slate-950">
-              {DRIVER_PRIVACY_TITLE}
+              {title}
             </h2>
 
             <div className="mt-3 flex flex-col gap-1.5">
               <span className="w-fit rounded-full bg-white px-3 py-1 text-[10px] font-black text-slate-700 ring-1 ring-blue-100">
-                📄 Versión: {DRIVER_PRIVACY_VERSION}
+                📄 Versión: {version}
               </span>
+
               <span className="w-fit rounded-full bg-white px-3 py-1 text-[10px] font-black text-slate-700 ring-1 ring-blue-100">
-                📅 Actualizado: {DRIVER_PRIVACY_LAST_UPDATED}
+                📅 Actualizado: {lastUpdated}
               </span>
             </div>
           </div>
@@ -83,29 +119,41 @@ export default function DriverPrivacyModal({ open, onClose, onAccepted }: Props)
         onScroll={handleScroll}
         className="max-h-[48dvh] overflow-y-auto px-4 py-4 text-[12.5px] leading-5 text-slate-700 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
-        {paragraphs.map((p, index) => {
-          const clean = p.replace(/^#+\s?/, "").trim();
-          const isTitle =
-            clean.startsWith("BLOQUE") ||
-            /^[0-9]+[\.\)]\s/.test(clean) ||
-            (clean.length < 90 && clean.toUpperCase() === clean);
-          const isBullet = clean.startsWith("•") || clean.startsWith("-");
+        {loadingDoc ? (
+          <p className="mb-3 text-[12.5px] font-semibold leading-5 text-slate-600">
+            Cargando documento legal vigente desde Legal Center...
+          </p>
+        ) : paragraphs.length === 0 ? (
+          <p className="mb-3 text-[12.5px] font-semibold leading-5 text-amber-700">
+            No se pudo cargar la política vigente. Intenta nuevamente.
+          </p>
+        ) : (
+          paragraphs.map((p, index) => {
+            const clean = p.replace(/^#+\s?/, "").trim();
 
-          return (
-            <p
-              key={`${clean}-${index}`}
-              className={
-                isTitle
-                  ? "mb-3 mt-5 text-[14px] font-black leading-5 text-slate-950 first:mt-0"
-                  : isBullet
-                    ? "mb-1.5 pl-2 text-[12.5px] font-semibold leading-5 text-slate-600"
-                    : "mb-3 text-[12.5px] font-medium leading-5 text-slate-700"
-              }
-            >
-              {clean}
-            </p>
-          );
-        })}
+            const isTitle =
+              clean.startsWith("BLOQUE") ||
+              /^[0-9]+[\.\)]\s/.test(clean) ||
+              (clean.length < 90 && clean.toUpperCase() === clean);
+
+            const isBullet = clean.startsWith("•") || clean.startsWith("-");
+
+            return (
+              <p
+                key={`${clean}-${index}`}
+                className={
+                  isTitle
+                    ? "mb-3 mt-5 text-[14px] font-black leading-5 text-slate-950 first:mt-0"
+                    : isBullet
+                      ? "mb-1.5 pl-2 text-[12.5px] font-semibold leading-5 text-slate-600"
+                      : "mb-3 text-[12.5px] font-medium leading-5 text-slate-700"
+                }
+              >
+                {clean}
+              </p>
+            );
+          })
+        )}
 
         <div className="mt-4 rounded-2xl border border-emerald-100 bg-emerald-50 p-3 text-xs font-black text-emerald-800">
           ✅ Has llegado al final del documento.
@@ -122,7 +170,9 @@ export default function DriverPrivacyModal({ open, onClose, onAccepted }: Props)
         <label
           className={[
             "flex items-start gap-3 rounded-2xl border p-3",
-            reachedBottom ? "border-slate-200 bg-white" : "border-slate-200 bg-slate-50 opacity-60",
+            reachedBottom
+              ? "border-slate-200 bg-white"
+              : "border-slate-200 bg-slate-50 opacity-60",
           ].join(" ")}
         >
           <input
@@ -132,8 +182,10 @@ export default function DriverPrivacyModal({ open, onClose, onAccepted }: Props)
             onChange={(e) => setChecked(e.target.checked)}
             className="mt-1 h-4 w-4 accent-emerald-600"
           />
+
           <span className="text-[11.5px] font-semibold leading-5 text-slate-700">
-            Declaro que he leído, comprendido y acepto la Política de Privacidad para Conductores KroniX.
+            Declaro que he leído, comprendido y acepto la Política de Privacidad
+            para Conductores KroniX.
           </span>
         </label>
 

@@ -3,12 +3,10 @@
 
 import { useEffect, useState } from "react";
 import {
-  DRIVER_PRIVACY_LAST_UPDATED,
-  DRIVER_PRIVACY_VERSION,
-} from "../../legal/driverPrivacy";
-import {
   checkDriverPrivacyStatus,
-  hasDriverPrivacyLocal,
+  getCurrentDriverLegalDocument,
+  DRIVER_PRIVACY_DOCUMENT_TYPE,
+  type DriverLegalDocument,
 } from "../../lib/driverPrivacyLegal";
 import DriverPrivacyModal from "./DriverPrivacyModal";
 
@@ -17,6 +15,20 @@ type Props = {
   onAcceptedRedirect?: string;
 };
 
+function formatLegalDate(value?: string | null) {
+  if (!value) return "Legal Center";
+
+  const d = new Date(value);
+
+  if (Number.isNaN(d.getTime())) return "Legal Center";
+
+  return d.toLocaleDateString("es-CO", {
+    year: "numeric",
+    month: "long",
+    day: "2-digit",
+  });
+}
+
 export default function DriverPrivacyCard({
   autoOpen = false,
   onAcceptedRedirect,
@@ -24,17 +36,26 @@ export default function DriverPrivacyCard({
   const [open, setOpen] = useState(false);
   const [accepted, setAccepted] = useState(false);
   const [checking, setChecking] = useState(true);
+  const [doc, setDoc] = useState<DriverLegalDocument | null>(null);
 
   async function refreshStatus() {
     setChecking(true);
+
     try {
+      const currentDoc = await getCurrentDriverLegalDocument(
+        DRIVER_PRIVACY_DOCUMENT_TYPE
+      );
+
+      setDoc(currentDoc);
+
       const ok = await checkDriverPrivacyStatus();
       setAccepted(ok);
+
       return ok;
     } catch {
-      const localOk = hasDriverPrivacyLocal();
-      setAccepted(localOk);
-      return localOk;
+      setDoc(null);
+      setAccepted(false);
+      return false;
     } finally {
       setChecking(false);
     }
@@ -48,12 +69,16 @@ export default function DriverPrivacyCard({
     if (!autoOpen) return;
     if (checking) return;
     if (accepted) return;
+
     setOpen(true);
   }, [autoOpen, checking, accepted]);
 
   async function handleAccepted() {
     const ok = await refreshStatus();
-    if (ok && onAcceptedRedirect) window.location.href = onAcceptedRedirect;
+
+    if (ok && onAcceptedRedirect) {
+      window.location.href = onAcceptedRedirect;
+    }
   }
 
   if (open) {
@@ -73,11 +98,14 @@ export default function DriverPrivacyCard({
           <div className="text-[11px] font-bold uppercase tracking-wide text-gray-500">
             Privacidad conductor
           </div>
+
           <div className="mt-1 text-base font-extrabold text-gray-900">
-            Política de Privacidad
+            {doc?.title || "Política de Privacidad"}
           </div>
+
           <div className="mt-1 text-[12px] text-gray-600">
-            Tratamiento de datos, GPS, documentos y seguridad.
+            {doc?.description ||
+              "Tratamiento de datos, GPS, documentos y seguridad."}
           </div>
         </div>
 
@@ -94,10 +122,17 @@ export default function DriverPrivacyCard({
 
       <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-3">
         <div className="text-[12px] text-slate-600">
-          Versión vigente: <span className="font-bold text-slate-800">{DRIVER_PRIVACY_VERSION}</span>
+          Versión vigente:{" "}
+          <span className="font-bold text-slate-800">
+            {doc?.version || "Cargando..."}
+          </span>
         </div>
+
         <div className="mt-1 text-[12px] text-slate-600">
-          Actualizado: <span className="font-bold text-slate-800">{DRIVER_PRIVACY_LAST_UPDATED}</span>
+          Actualizado:{" "}
+          <span className="font-bold text-slate-800">
+            {formatLegalDate(doc?.updatedAt)}
+          </span>
         </div>
       </div>
 

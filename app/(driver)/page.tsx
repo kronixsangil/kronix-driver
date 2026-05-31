@@ -22,18 +22,15 @@ import { driverFetchAvailableOrders } from "../(driver)/lib/driverOrderApi";
 import { playDriverSound } from "../(driver)/lib/sound";
 import { ensureNotifyPermission, showNotify } from "../(driver)/lib/notify";
 import { useDriverCity } from "./components/DriverCityContext";
-import { DRIVER_PRIVACY_VERSION } from "./legal/driverPrivacy";
+
 import {
-  checkDriverPrivacyStatus,
-  hasDriverPrivacyLocal,
+  checkDriverPrivacyStatus
 } from "./lib/driverPrivacyLegal";
 
 import {
-  checkDriverIndependenceStatus,
-  hasDriverIndependenceLocal,
+  checkDriverIndependenceStatus
 } from "./lib/driverIndependenceLegal";
 
-import { DRIVER_INDEPENDENCE_VERSION } from "./legal/driverIndependence";
 import { checkDriverTermsStatus } from "./lib/driverTermsLegal";
 
 
@@ -832,24 +829,33 @@ const [checkingPrivacy, setCheckingPrivacy] = useState(true);
   };
 }, []);
 useEffect(() => {
-  try {
-    const raw = localStorage.getItem("kronix_driver_privacy_acceptance");
+  let mounted = true;
 
-    if (!raw) {
+  async function loadPrivacy() {
+    setCheckingPrivacy(true);
+
+    try {
+      const accepted = await checkDriverPrivacyStatus();
+
+      if (!mounted) return;
+
+      setPrivacyAccepted(accepted);
+    } catch {
+      if (!mounted) return;
+
       setPrivacyAccepted(false);
-      return;
+    } finally {
+      if (mounted) {
+        setCheckingPrivacy(false);
+      }
     }
-
-    const parsed = JSON.parse(raw);
-
-    setPrivacyAccepted(
-      parsed?.version === DRIVER_PRIVACY_VERSION
-    );
-  } catch {
-    setPrivacyAccepted(false);
-  } finally {
-    setCheckingPrivacy(false);
   }
+
+  loadPrivacy();
+
+  return () => {
+    mounted = false;
+  };
 }, []);
 
   useEffect(() => {
@@ -1318,42 +1324,31 @@ showNotify("Pedido listo para recoger", `${storeName} ya tiene el pedido listo.`
     };
   }, [driverIdForEvents]);
 
-  useEffect(() => {
+useEffect(() => {
   let mounted = true;
 
   async function loadIndependence() {
     setCheckingIndependence(true);
 
     try {
-      const res = await checkDriverIndependenceStatus(); // retorna true/false
-      if (!mounted) return;
-      setIndependenceAccepted(!!res);
+      const accepted = await checkDriverIndependenceStatus();
 
-      // cache local UX
-      if (res) {
-        localStorage.setItem(
-          "kronix_driver_independence_acceptance",
-          JSON.stringify({
-            version: DRIVER_INDEPENDENCE_VERSION,
-            acceptedAt: new Date().toISOString(),
-          })
-        );
-      }
+      if (!mounted) return;
+
+      setIndependenceAccepted(accepted);
     } catch {
-      // fallback localStorage
-      try {
-        const raw = localStorage.getItem("kronix_driver_independence_acceptance");
-        const parsed = raw ? JSON.parse(raw) : null;
-        setIndependenceAccepted(parsed?.version === DRIVER_INDEPENDENCE_VERSION);
-      } catch {
-        setIndependenceAccepted(false);
-      }
+      if (!mounted) return;
+
+      setIndependenceAccepted(false);
     } finally {
-      if (mounted) setCheckingIndependence(false);
+      if (mounted) {
+        setCheckingIndependence(false);
+      }
     }
   }
 
   loadIndependence();
+
   return () => {
     mounted = false;
   };

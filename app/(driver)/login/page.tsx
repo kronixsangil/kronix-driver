@@ -77,7 +77,7 @@ function DriverLoginPageContent() {
       const role = String(me?.user?.role ?? "").toUpperCase();
 
       if (role !== "DRIVER") {
-        setError("Esta cuenta no es de Conductor. Usa una cuenta DRIVER.");
+        setError("Esta cuenta no es de Conductor. Usa tu cuenta de conductor para acceder a esta app.");
         setLoading(false);
         return;
       }

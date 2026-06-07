@@ -271,24 +271,56 @@ export default function PickupOrderCard({
             ) : null}
             
             {isCourierFlow ? (
-              <div className="mt-3 rounded-[18px] border border-slate-200 bg-slate-50 px-4 py-3">
-                <div className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-slate-500">
-                  {formatPackageLabel(order)}
-                </div>
-                <div className="mt-2 whitespace-pre-wrap text-[14px] leading-5 text-slate-700">
-                  {packageDescription || "Sin descripción adicional."}
-                </div>
-              </div>
-            ) : null}
+  <div className="mt-3 rounded-[18px] border border-slate-200 bg-slate-50 px-4 py-3">
+    <div className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-slate-500">
+      {getCourierType(order) === "SEND_PACKAGE"
+        ? "Indicaciones KroniX Envíos"
+        : formatPackageLabel(order)}
+    </div>
 
-            <div className="mt-3 rounded-[18px] border border-slate-200 bg-slate-50 px-4 py-3">
-              <div className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-slate-500">
-                Indicaciones del cliente
-              </div>
-              <div className="mt-2 whitespace-pre-wrap text-[14px] leading-5 text-slate-700">
-                {order.customerNote?.trim() || "Sin indicaciones adicionales."}
-              </div>
+    {getCourierType(order) === "SEND_PACKAGE" ? (
+      <div className="mt-2 text-[14px] leading-5 text-slate-700">
+        <p className="font-semibold">
+          Recibe el paquete, confirma con el cliente los datos del envío y continúa a
+          “En ruta”.
+        </p>
+
+        <div className="mt-3 rounded-[16px] border border-amber-200 bg-amber-50 px-3 py-2 text-[13px] font-semibold leading-5 text-amber-900">
+          Si existen condiciones especiales como lluvia, espera, zona alejada,
+          distancia mayor, paquete grande, pesado o difícil de transportar, puedes
+          acordar directamente con el cliente un valor adicional por fuera de KroniX
+          mediante efectivo, transferencia o QR.
+        </div>
+
+        {note.length > 0 ? (
+          <div className="mt-3 rounded-[16px] border border-slate-200 bg-white px-3 py-2">
+            <div className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-slate-500">
+              Nota del cliente
             </div>
+            <div className="mt-1 whitespace-pre-wrap text-[13px] font-semibold leading-5 text-slate-700">
+              {note}
+            </div>
+          </div>
+        ) : null}
+      </div>
+    ) : (
+      <div className="mt-2 whitespace-pre-wrap text-[14px] leading-5 text-slate-700">
+        {packageDescription || "Sin descripción adicional."}
+      </div>
+    )}
+  </div>
+) : null}
+
+{getCourierType(order) !== "SEND_PACKAGE" ? (
+  <div className="mt-3 rounded-[18px] border border-slate-200 bg-slate-50 px-4 py-3">
+    <div className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-slate-500">
+      Indicaciones del cliente
+    </div>
+    <div className="mt-2 whitespace-pre-wrap text-[14px] leading-5 text-slate-700">
+      {order.customerNote?.trim() || "Sin indicaciones adicionales."}
+    </div>
+  </div>
+) : null}
 
             {err ? (
               <div className="mt-3 rounded-[18px] border border-amber-200 bg-amber-50 px-4 py-3 text-[14px] font-semibold text-amber-900">

@@ -114,6 +114,52 @@ type DriverReadyMap = Record<
 >;
 
 const READY_PICKUP_DRIVER_STORAGE_KEY = "ct_driver_ready_orders_v2";
+
+const DRIVER_ACTIVE_STEP_STORAGE_KEY = "ct_driver_active_steps_v1";
+
+function readStoredDriverStep(orderId?: string | null): ActiveState["step"] | null {
+  try {
+    const id = String(orderId ?? "").trim();
+    if (!id) return null;
+
+    const raw = localStorage.getItem(DRIVER_ACTIVE_STEP_STORAGE_KEY);
+    const map = raw ? JSON.parse(raw) : {};
+    const step = String(map?.[id] ?? "").trim();
+
+    if (step === "ASIGNADO" || step === "EN_CAMINO" || step === "EN_RUTA" || step === "ENTREGADO") {
+      return step;
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function writeStoredDriverStep(orderId: string, step: ActiveState["step"]) {
+  try {
+    const id = String(orderId ?? "").trim();
+    if (!id) return;
+
+    const raw = localStorage.getItem(DRIVER_ACTIVE_STEP_STORAGE_KEY);
+    const map = raw ? JSON.parse(raw) : {};
+    map[id] = step;
+    localStorage.setItem(DRIVER_ACTIVE_STEP_STORAGE_KEY, JSON.stringify(map));
+  } catch {}
+}
+
+function clearStoredDriverStep(orderId?: string | null) {
+  try {
+    const id = String(orderId ?? "").trim();
+    if (!id) return;
+
+    const raw = localStorage.getItem(DRIVER_ACTIVE_STEP_STORAGE_KEY);
+    const map = raw ? JSON.parse(raw) : {};
+    delete map[id];
+    localStorage.setItem(DRIVER_ACTIVE_STEP_STORAGE_KEY, JSON.stringify(map));
+  } catch {}
+}
+
 const API_BASE = process.env.NEXT_PUBLIC_API || "http://localhost:3004";
 
 
@@ -981,8 +1027,14 @@ const deliveredOrderRef = useRef<AvailableOrder | null>(null);
 
   
 const setStep = (step: ActiveState["step"]) => {
+  const orderId = String(assignedOrderRef.current?.orderId ?? "").trim();
+
   assignedStepRef.current = step;
   setAssignedStep(step);
+
+  if (orderId) {
+    writeStoredDriverStep(orderId, step);
+  }
 };
 
 const syncActiveOrderFromBackend = useCallback(async () => {
@@ -999,7 +1051,8 @@ const syncActiveOrderFromBackend = useCallback(async () => {
     }
 
     const backendStep = stepFromApi(activeFromBackend, assignedStepRef.current);
-const safeStep = maxStep(assignedStepRef.current, backendStep);
+const storedStep = readStoredDriverStep(activeFromBackend.orderId);
+const safeStep = maxStep(storedStep ?? assignedStepRef.current, backendStep);
 
     assignedOrderRef.current = activeFromBackend;
     assignedStepRef.current = safeStep;
@@ -1388,6 +1441,7 @@ useEffect(() => {
   }
 
   clearReadyPickup(assignedOrder.orderId);
+  clearStoredDriverStep(assignedOrder.orderId);
   setAssignedOrder(null);
   setAssignedStep("ASIGNADO");
   return;

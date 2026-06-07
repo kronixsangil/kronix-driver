@@ -97,8 +97,6 @@ export default function PickupOrderCard({
   const hasMultiple = pickups.length > 1;
   const isCourierFlow = !!getCourierType(order);
 
-  const isSendPackageFlow = getCourierType(order) === "SEND_PACKAGE";
-
   const [selectedPickupIndex, setSelectedPickupIndex] = useState<number | null>(
     hasMultiple ? null : pickups.length ? 0 : null
   );
@@ -272,125 +270,25 @@ export default function PickupOrderCard({
               </div>
             ) : null}
             
-            {isSendPackageFlow ? (
-  <div className="mt-3 space-y-3">
-    <div className="overflow-hidden rounded-[22px] border border-emerald-200 bg-white shadow-sm">
-      <div className="bg-[linear-gradient(135deg,#063b35_0%,#0f766e_45%,#0ea5e9_100%)] px-4 py-4 text-white">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <div className="text-[11px] font-black uppercase tracking-[0.14em] text-emerald-100">
-              KroniX Envíos Plus
+            {isCourierFlow ? (
+              <div className="mt-3 rounded-[18px] border border-slate-200 bg-slate-50 px-4 py-3">
+                <div className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-slate-500">
+                  {formatPackageLabel(order)}
+                </div>
+                <div className="mt-2 whitespace-pre-wrap text-[14px] leading-5 text-slate-700">
+                  {packageDescription || "Sin descripción adicional."}
+                </div>
+              </div>
+            ) : null}
+
+            <div className="mt-3 rounded-[18px] border border-slate-200 bg-slate-50 px-4 py-3">
+              <div className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-slate-500">
+                Indicaciones del cliente
+              </div>
+              <div className="mt-2 whitespace-pre-wrap text-[14px] leading-5 text-slate-700">
+                {order.customerNote?.trim() || "Sin indicaciones adicionales."}
+              </div>
             </div>
-            <div className="mt-1 text-[18px] font-black leading-tight">
-              Servicio de recogida rápida
-            </div>
-            <div className="mt-1 text-[12px] font-semibold leading-4 text-white/85">
-              El cliente ya pagó el valor inicial por Wallet. Confirma el paquete y continúa.
-            </div>
-          </div>
-
-          <div className="shrink-0 rounded-2xl bg-white/15 px-3 py-2 text-right ring-1 ring-white/20">
-            <div className="text-[10px] font-black uppercase tracking-[0.12em] text-white/75">
-              Pago
-            </div>
-            <div className="text-[17px] font-black leading-tight">
-              ${payout.toLocaleString("es-CO")}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="space-y-3 p-4">
-        <div className="rounded-[18px] border border-slate-200 bg-slate-50 px-4 py-3">
-          <div className="text-[11px] font-black uppercase tracking-[0.12em] text-slate-500">
-            Qué debes hacer ahora
-          </div>
-
-          <div className="mt-3 space-y-2 text-[13px] font-semibold leading-5 text-slate-700">
-            <div className="flex gap-2">
-              <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-emerald-600 text-[11px] font-black text-white">
-                1
-              </span>
-              <span>Recibe el paquete en el punto de recogida indicado.</span>
-            </div>
-
-            <div className="flex gap-2">
-              <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-emerald-600 text-[11px] font-black text-white">
-                2
-              </span>
-              <span>Confirma con el cliente destino, detalles del paquete y condiciones especiales.</span>
-            </div>
-
-            <div className="flex gap-2">
-              <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-emerald-600 text-[11px] font-black text-white">
-                3
-              </span>
-              <span>Presiona “Recogí el paquete” para pasar el servicio a En ruta.</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-[18px] border border-amber-200 bg-amber-50 px-4 py-3">
-          <div className="text-[11px] font-black uppercase tracking-[0.12em] text-amber-700">
-            Cobros adicionales permitidos
-          </div>
-
-          <div className="mt-2 text-[13px] font-semibold leading-5 text-amber-900">
-            Puedes acordar un valor adicional directamente con el cliente cuando existan
-            condiciones especiales como lluvia, tráfico fuerte, espera prolongada,
-            distancia mayor a la prevista, zona alejada o paquete grande, pesado,
-            voluminoso o difícil de transportar.
-          </div>
-        </div>
-
-        <div className="rounded-[18px] border border-blue-200 bg-blue-50 px-4 py-3">
-          <div className="text-[11px] font-black uppercase tracking-[0.12em] text-blue-700">
-            Forma de pago del adicional
-          </div>
-
-          <div className="mt-2 text-[13px] font-semibold leading-5 text-blue-900">
-            Cualquier valor extra debe ser aceptado por el cliente y podrá pagarse por
-            fuera de KroniX, en efectivo, transferencia o código QR. No inicies el
-            ajuste si el cliente no está de acuerdo.
-          </div>
-        </div>
-
-        {note.length > 0 ? (
-          <div className="rounded-[18px] border border-slate-200 bg-white px-4 py-3">
-            <div className="text-[11px] font-black uppercase tracking-[0.12em] text-slate-500">
-              Nota del cliente
-            </div>
-            <div className="mt-2 whitespace-pre-wrap text-[13px] font-semibold leading-5 text-slate-700">
-              {note}
-            </div>
-          </div>
-        ) : null}
-      </div>
-    </div>
-  </div>
-) : (
-  <>
-    {isCourierFlow ? (
-      <div className="mt-3 rounded-[18px] border border-slate-200 bg-slate-50 px-4 py-3">
-        <div className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-slate-500">
-          {formatPackageLabel(order)}
-        </div>
-        <div className="mt-2 whitespace-pre-wrap text-[14px] leading-5 text-slate-700">
-          {packageDescription || "Sin descripción adicional."}
-        </div>
-      </div>
-    ) : null}
-
-    <div className="mt-3 rounded-[18px] border border-slate-200 bg-slate-50 px-4 py-3">
-      <div className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-slate-500">
-        Indicaciones del cliente
-      </div>
-      <div className="mt-2 whitespace-pre-wrap text-[14px] leading-5 text-slate-700">
-        {order.customerNote?.trim() || "Sin indicaciones adicionales."}
-      </div>
-    </div>
-  </>
-)}
 
             {err ? (
               <div className="mt-3 rounded-[18px] border border-amber-200 bg-amber-50 px-4 py-3 text-[14px] font-semibold text-amber-900">

@@ -1,6 +1,8 @@
 //app/(diver)/layout.tsx
+//app/(diver)/layout.tsx
 import type { ReactNode } from "react";
 import DriverShell from "./components/DriverShell";
+import ForcePasswordChangeGate from "./components/ForcePasswordChangeGate";
 import { DriverCityProvider } from "./components/DriverCityContext";
 
 export const metadata = {
@@ -19,7 +21,9 @@ export const metadata = {
 export default function DriverLayout({ children }: { children: ReactNode }) {
   return (
     <DriverCityProvider>
-      <DriverShell>{children}</DriverShell>
+      <ForcePasswordChangeGate>
+        <DriverShell>{children}</DriverShell>
+      </ForcePasswordChangeGate>
     </DriverCityProvider>
   );
 }

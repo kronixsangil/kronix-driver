@@ -15,6 +15,7 @@ export type AuthMePayload = {
     storeCode?: string | null;
     iat?: number;
     exp?: number;
+    mustChangePassword?: boolean;
   };
 };
 
@@ -100,6 +101,7 @@ function normalizeAuthPayload(anyResp: any): AuthMePayload | null {
       storeCode: u?.storeCode ?? null,
       iat: u?.iat,
       exp: u?.exp,
+      mustChangePassword: Boolean(u?.mustChangePassword),
     },
   };
 }
@@ -125,6 +127,7 @@ export async function getMe(): Promise<AuthMePayload | null> {
           email: out?.user?.email ?? null,
           storeId: null,
           storeCode: null,
+          mustChangePassword: Boolean(out?.user?.mustChangePassword),
         },
       };
     }

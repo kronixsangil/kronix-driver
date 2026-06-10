@@ -2,8 +2,9 @@
 "use client";
 
 import { apiFetch } from "../../../../lib/apiFetch";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { logoutDriver } from "../../../../lib/driverAuthActions";
+import { getMe } from "../../../../lib/driverAuth";
 import { useDriverCity } from "../../components/DriverCityContext";
 
 type SaveState = "idle" | "saving" | "ok" | "error";
@@ -12,14 +13,27 @@ function cn(...parts: Array<string | false | null | undefined>) {
   return parts.filter(Boolean).join(" ");
 }
 
-function meetsMinLen(p: string) {
-  return (p || "").trim().length >= 6;
+function hasMinLen(p: string) {
+  return (p || "").trim().length >= 8;
+}
+
+function hasLetter(p: string) {
+  return /[a-zA-Z]/.test(String(p || ""));
+}
+
+function hasNumber(p: string) {
+  return /\d/.test(String(p || ""));
+}
+
+function isValidKronixPassword(p: string) {
+  return hasMinLen(p) && hasLetter(p) && hasNumber(p);
 }
 
 export default function DriverSecurityPage() {
   const { cityLabel, cityName, loading: cityLoading } = useDriverCity();
 
   const [open, setOpen] = useState(false);
+  const [mustChangePassword, setMustChangePassword] = useState(false);
 
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -32,17 +46,34 @@ export default function DriverSecurityPage() {
   const [state, setState] = useState<SaveState>("idle");
   const [msg, setMsg] = useState("");
 
-  const reqMinLen = useMemo(() => meetsMinLen(newPassword), [newPassword]);
+  const reqMinLen = useMemo(() => hasMinLen(newPassword), [newPassword]);
+  const reqLetter = useMemo(() => hasLetter(newPassword), [newPassword]);
+  const reqNumber = useMemo(() => hasNumber(newPassword), [newPassword]);
   const reqMatch = useMemo(
     () => (confirmPassword || "").trim().length > 0 && newPassword === confirmPassword,
     [newPassword, confirmPassword]
   );
 
   const canSubmit = useMemo(() => {
-    return meetsMinLen(currentPassword) && reqMinLen && reqMatch && state !== "saving";
-  }, [currentPassword, reqMinLen, reqMatch, state]);
+    return currentPassword.trim().length > 0 && isValidKronixPassword(newPassword) && reqMatch && state !== "saving";
+  }, [currentPassword, newPassword, reqMatch, state]);
 
   const cityText = cityLoading ? "Cargando ciudad..." : cityLabel || cityName || "Ciudad no asignada";
+
+  useEffect(() => {
+    let alive = true;
+
+    getMe().then((me) => {
+      if (!alive) return;
+      const force = Boolean(me?.user?.mustChangePassword);
+      setMustChangePassword(force);
+      if (force) setOpen(true);
+    });
+
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   async function tryChangePassword(payload: { currentPassword: string; newPassword: string }) {
     const candidates: Array<{ url: string; method: "POST" | "PATCH" }> = [
@@ -93,6 +124,8 @@ export default function DriverSecurityPage() {
 
       setState("ok");
       setMsg("Contraseña actualizada correctamente.");
+      setMustChangePassword(false);
+      window.dispatchEvent(new Event("auth:changed"));
 
       setCurrentPassword("");
       setNewPassword("");
@@ -108,7 +141,7 @@ export default function DriverSecurityPage() {
       } else if (e?.status === 401) {
         setMsg("Sesión no válida. Inicia sesión de nuevo e inténtalo.");
       } else if (e?.status === 400) {
-        setMsg("Datos inválidos. Verifica la contraseña actual y que la nueva cumpla requisitos.");
+        setMsg("Datos inválidos. Verifica la contraseña actual y que la nueva tenga mínimo 8 caracteres, letras y números.");
       } else {
         setMsg(e?.message || "No se pudo actualizar la contraseña.");
       }
@@ -136,6 +169,12 @@ export default function DriverSecurityPage() {
             <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" />
             {cityText}
           </div>
+
+          {mustChangePassword ? (
+            <div className="mt-3 rounded-3xl border border-amber-200 bg-amber-50 p-4 text-sm font-bold leading-6 text-amber-900">
+              🔐 Tu contraseña fue restablecida por KroniX. Debes cambiarla antes de continuar usando la app.
+            </div>
+          ) : null}
         </div>
 
         <div className="mx-2 rounded-3xl border border-gray-200 bg-white p-4 shadow-[0_14px_34px_rgba(15,23,42,0.10)]">
@@ -189,7 +228,31 @@ export default function DriverSecurityPage() {
                 >
                   {reqMinLen ? "✓" : "•"}
                 </span>
-                <span className={cn(reqMinLen ? "text-emerald-800" : "text-gray-700")}>Mínimo 6 caracteres</span>
+                <span className={cn(reqMinLen ? "text-emerald-800" : "text-gray-700")}>Mínimo 8 caracteres</span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span
+                  className={cn(
+                    "inline-flex h-5 w-5 items-center justify-center rounded-full border text-[11px] font-extrabold",
+                    reqLetter ? "bg-emerald-50 text-emerald-800 border-emerald-200" : "bg-white text-gray-700 border-gray-200"
+                  )}
+                >
+                  {reqLetter ? "✓" : "•"}
+                </span>
+                <span className={cn(reqLetter ? "text-emerald-800" : "text-gray-700")}>Contiene al menos una letra</span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span
+                  className={cn(
+                    "inline-flex h-5 w-5 items-center justify-center rounded-full border text-[11px] font-extrabold",
+                    reqNumber ? "bg-emerald-50 text-emerald-800 border-emerald-200" : "bg-white text-gray-700 border-gray-200"
+                  )}
+                >
+                  {reqNumber ? "✓" : "•"}
+                </span>
+                <span className={cn(reqNumber ? "text-emerald-800" : "text-gray-700")}>Contiene al menos un número</span>
               </div>
 
               <div className="flex items-center gap-2">
@@ -243,7 +306,7 @@ export default function DriverSecurityPage() {
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     type={showNew ? "text" : "password"}
-                    placeholder="Mínimo 6 caracteres"
+                    placeholder="Mínimo 8 caracteres"
                     className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-emerald-400"
                     autoComplete="new-password"
                   />

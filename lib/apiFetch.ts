@@ -1,5 +1,4 @@
-//lib/apiFetch
-
+//lib/apiFetch.ts
 export type ApiError = { status: number; message: string };
 
 function getApiBase() {
@@ -11,8 +10,6 @@ function getApiBase() {
 }
 
 let refreshing: Promise<boolean> | null = null;
-
-// ✅ Identificador de app para separar cookies en backend
 const CT_APP = "driver";
 
 function isAuthPath(path: string) {
@@ -20,15 +17,18 @@ function isAuthPath(path: string) {
     path.startsWith("/auth/login") ||
     path.startsWith("/auth/refresh") ||
     path.startsWith("/auth/logout") ||
-    path.startsWith("/auth/register")
+    path.startsWith("/auth/register") ||
+    path.startsWith("/auth/forgot-password") ||
+    path.startsWith("/auth/reset-password") ||
+    path.startsWith("/auth/request-password-reset") ||
+    path.startsWith("/auth/password-reset/")
   );
 }
 
 async function refreshSession(): Promise<boolean> {
   const API_BASE = getApiBase();
-if (!API_BASE) return false;
+  if (!API_BASE) return false;
 
-  // evitar múltiples refresh simultáneos
   if (!refreshing) {
     refreshing = (async () => {
       try {
@@ -37,7 +37,6 @@ if (!API_BASE) return false;
           credentials: "include",
           headers: {
             "Content-Type": "application/json",
-            // ✅ CLAVE: el backend usará ct_*_driver
             "x-ct-app": CT_APP,
           },
           cache: "no-store",
@@ -55,7 +54,6 @@ if (!API_BASE) return false;
 }
 
 async function readBody<T>(res: Response): Promise<T> {
-  // 204 / vacío: no hay JSON
   if (res.status === 204) return undefined as T;
 
   const text = await res.text().catch(() => "");
@@ -64,7 +62,6 @@ async function readBody<T>(res: Response): Promise<T> {
   try {
     return JSON.parse(text) as T;
   } catch {
-    // si el backend devuelve texto plano
     return text as unknown as T;
   }
 }
@@ -72,19 +69,17 @@ async function readBody<T>(res: Response): Promise<T> {
 export async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
   const API_BASE = getApiBase();
 
-if (!API_BASE) {
-  throw { status: 0, message: "Falta NEXT_PUBLIC_API en .env.local" } satisfies ApiError;
-}
+  if (!API_BASE) {
+    throw { status: 0, message: "Falta NEXT_PUBLIC_API en .env.local" } satisfies ApiError;
+  }
 
   const method = String(options.method ?? "GET").toUpperCase();
   const headers = new Headers(options.headers || {});
 
-  // ✅ SIEMPRE mandar el header para que NO se crucen cookies con Buyer/Store
   if (!headers.has("x-ct-app")) {
     headers.set("x-ct-app", CT_APP);
   }
 
-  // Solo setear Content-Type si realmente enviamos body (POST/PUT/PATCH)
   const hasBody = options.body != null && method !== "GET" && method !== "HEAD";
   if (hasBody && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
@@ -99,10 +94,8 @@ if (!API_BASE) {
       cache: options.cache ?? "no-store",
     });
 
-  // 1er intento
   let res = await doFetch();
 
-  // si no autorizado (401/403), intentamos refresh 1 vez (excepto rutas auth)
   if ((res.status === 401 || res.status === 403) && !isAuthPath(path)) {
     const ok = await refreshSession();
     if (ok) {

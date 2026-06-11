@@ -2,6 +2,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import { apiFetch } from "../../../../lib/apiFetch";
 import { useDriverCity } from "../../components/DriverCityContext";
 
@@ -28,6 +29,7 @@ export default function DriverInfoPage() {
     fullName: "",
     email: "",
     phone: "",
+    profileImageUrl: "",
   });
 
   const canSave = useMemo(() => {
@@ -38,6 +40,21 @@ export default function DriverInfoPage() {
   }, [form]);
 
   const cityText = cityLoading ? "Cargando ciudad..." : cityLabel || cityName || "Ciudad no asignada";
+
+  function handlePhotoFile(file: File | null) {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setError("Selecciona una imagen válida.");
+      return;
+    }
+    if (file.size > 750_000) {
+      setError("La foto debe pesar máximo 750 KB.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => setForm((p) => ({ ...p, profileImageUrl: String(reader.result ?? "") }));
+    reader.readAsDataURL(file);
+  }
 
   useEffect(() => {
     let mounted = true;
@@ -57,6 +74,7 @@ export default function DriverInfoPage() {
           fullName: String(fullName || "").trim(),
           email: String(u?.email ?? "").trim(),
           phone: String(u?.phone ?? "").trim(),
+          profileImageUrl: String(u?.profileImageUrl ?? "").trim(),
         });
 
         setSource("drivers/me");
@@ -87,6 +105,7 @@ export default function DriverInfoPage() {
           fullName: String(fullName || "").trim(),
           email: String(u?.email ?? "").trim(),
           phone: String(u?.phone ?? "").trim(),
+          profileImageUrl: String(u?.profileImageUrl ?? "").trim(),
         });
         setSource("auth/me");
         setLoading(false);
@@ -117,6 +136,7 @@ export default function DriverInfoPage() {
           name: String(form.fullName || "").trim(),
           email: String(form.email || "").trim() || null,
           phone: String(form.phone || "").trim() || null,
+          profileImageUrl: String(form.profileImageUrl || "").trim() || null,
         }),
         cache: "no-store",
       });
@@ -130,6 +150,7 @@ export default function DriverInfoPage() {
           fullName: String(fullName || "").trim(),
           email: String(u?.email ?? "").trim(),
           phone: String(u?.phone ?? "").trim(),
+          profileImageUrl: String(u?.profileImageUrl ?? "").trim(),
         });
         setSource("drivers/me");
       } catch {}
@@ -187,6 +208,31 @@ export default function DriverInfoPage() {
             <div className="mt-1 text-sm font-extrabold text-slate-900">{cityText}</div>
             <div className="mt-1 text-[12px] text-slate-600">
               Esta información viene del esquema multiciudad del conductor.
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+            <div className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Foto de perfil</div>
+            <div className="mt-3 flex items-center gap-3">
+              <div className="relative h-16 w-16 overflow-hidden rounded-2xl bg-slate-900 text-white ring-1 ring-slate-200">
+                {form.profileImageUrl ? (
+                  <Image src={form.profileImageUrl} alt="Foto de perfil" fill className="object-cover" sizes="64px" />
+                ) : (
+                  <div className="grid h-full w-full place-items-center text-sm font-extrabold">Foto</div>
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
+                <label className="inline-flex cursor-pointer rounded-2xl bg-slate-900 px-4 py-3 text-xs font-extrabold text-white">
+                  Elegir foto
+                  <input type="file" accept="image/*" className="hidden" onChange={(e) => handlePhotoFile(e.target.files?.[0] ?? null)} />
+                </label>
+                {form.profileImageUrl ? (
+                  <button type="button" onClick={() => setForm((p) => ({ ...p, profileImageUrl: "" }))} className="ml-2 rounded-2xl border border-gray-200 px-4 py-3 text-xs font-extrabold text-gray-700">
+                    Quitar
+                  </button>
+                ) : null}
+                <div className="mt-2 text-[11px] text-gray-500">Máximo 750 KB.</div>
+              </div>
             </div>
           </div>
 

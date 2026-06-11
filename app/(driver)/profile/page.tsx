@@ -29,6 +29,7 @@ type MeState = {
   phone?: string;
   vehicle?: string;
   payoutMethod?: string;
+  profileImageUrl?: string | null;
 };
 
 type ProfileImageNavCardProps = {
@@ -98,6 +99,7 @@ export default function DriverProfilePage() {
     phone: "—",
     vehicle: "—",
     payoutMethod: "—",
+    profileImageUrl: null,
   });
 
   const [loadingMe, setLoadingMe] = useState(false);
@@ -126,6 +128,7 @@ export default function DriverProfilePage() {
           fullName,
           email,
           phone: out?.user?.phone ?? prev.phone ?? "—",
+          profileImageUrl: out?.user?.profileImageUrl ?? prev.profileImageUrl ?? null,
         }));
       } catch {
         // fallback
@@ -209,6 +212,7 @@ export default function DriverProfilePage() {
           cityDepartment={cityDepartment ?? null}
           cityLabel={cityLabel ?? null}
           cityLoading={cityLoading}
+          profileImageUrl={me.profileImageUrl ?? null}
         />
 
         <MetricsCard

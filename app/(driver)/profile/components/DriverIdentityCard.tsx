@@ -2,6 +2,7 @@
 "use client";
 
 import { useMemo } from "react";
+import Image from "next/image";
 import { Shield, Crown, Award, Gem, MapPin } from "lucide-react";
 
 type Props = {
@@ -16,6 +17,7 @@ type Props = {
   cityDepartment?: string | null;
   cityLabel?: string | null;
   cityLoading?: boolean;
+  profileImageUrl?: string | null;
 };
 
 function shortName(name: string) {
@@ -93,6 +95,7 @@ export default function DriverIdentityCard({
   cityDepartment = null,
   cityLabel = null,
   cityLoading = false,
+  profileImageUrl = null,
 }: Props) {
   const initials = useMemo(() => shortName(fullName), [fullName]);
   const safeEmail = useMemo(() => maskEmail(email), [email]);
@@ -115,8 +118,12 @@ export default function DriverIdentityCard({
 
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="h-12 w-12 shrink-0 rounded-full bg-white/15 border border-white/25 flex items-center justify-center text-base font-extrabold">
-              {loading ? "…" : initials}
+            <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full bg-white/15 border border-white/25 text-base font-extrabold">
+              {!loading && profileImageUrl ? (
+                <Image src={profileImageUrl} alt="Foto de perfil" fill className="object-cover" sizes="48px" />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center">{loading ? "…" : initials}</div>
+              )}
             </div>
 
             <div className="min-w-0">

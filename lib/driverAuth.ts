@@ -45,6 +45,7 @@ export type DriverAppMeResponse = {
     email?: string | null;
     role?: string;
     nickname?: string | null;
+    profileImageUrl?: string | null;
   };
   driverProfile: {
     id: string;
@@ -152,6 +153,7 @@ export type DriverMeResponse = {
     email?: string | null;
     role?: string;
     nickname?: string | null;
+    profileImageUrl?: string | null;
   };
   driverProfile: {
     id: string;
@@ -192,6 +194,7 @@ export async function getDriverAppMe(): Promise<DriverAppMeResponse | null> {
         email: user?.email ?? null,
         role: user?.role,
         nickname: user?.nickname ?? null,
+        profileImageUrl: user?.profileImageUrl ?? null,
       },
       driverProfile: {
         id: String(driverProfile?.id ?? ""),

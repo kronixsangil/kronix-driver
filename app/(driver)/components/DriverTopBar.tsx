@@ -1,4 +1,5 @@
 //app/(driver)/components/DriverTopBar.tsx
+//app/(driver)/components/DriverTopBar.tsx
 "use client";
 
 import Link from "next/link";
@@ -80,6 +81,16 @@ function getInitials(name: string) {
 
   return (a + b).toUpperCase();
 }
+
+function normalizeProfileImageUrl(value?: string | null) {
+  const raw = String(value ?? "").trim();
+  if (!raw) return "";
+  if (raw.startsWith("http://") || raw.startsWith("https://") || raw.startsWith("data:")) return raw;
+  if (raw.startsWith("/api/")) return raw;
+  if (raw.startsWith("/")) return `/api/driver${raw}`;
+  return raw;
+}
+
 
 function isPathActive(pathname: string, href: string) {
   if (href === "/") return pathname === "/";
@@ -184,6 +195,7 @@ export default function DriverTopBar() {
   const [checkingMe, setCheckingMe] = useState(true);
   const [driverName, setDriverName] = useState("");
   const [driverEmail, setDriverEmail] = useState("");
+  const [driverProfileImageUrl, setDriverProfileImageUrl] = useState("");
 
   const [active, setActive] = useState<ActiveState | null>(null);
 
@@ -245,11 +257,13 @@ export default function DriverTopBar() {
         if (!ok) {
           setDriverName("");
           setDriverEmail("");
+          setDriverProfileImageUrl("");
           return;
         }
 
         let bestName = "";
         let bestEmail = "";
+        let bestImage = "";
 
         try {
           const driverMe = await getDriverMe();
@@ -257,6 +271,7 @@ export default function DriverTopBar() {
 
           bestName = String(driverMe?.user?.name ?? "").trim();
           bestEmail = String(driverMe?.user?.email ?? "").trim();
+          bestImage = String(driverMe?.user?.profileImageUrl ?? "").trim();
         } catch {}
 
         if (!bestName) {
@@ -269,11 +284,13 @@ export default function DriverTopBar() {
 
         setDriverName(bestName);
         setDriverEmail(bestEmail);
+        setDriverProfileImageUrl(bestImage);
       } catch {
         if (!alive) return;
         setIsOnline(false);
         setDriverName("");
         setDriverEmail("");
+        setDriverProfileImageUrl("");
       } finally {
         if (!alive) return;
         setCheckingMe(false);
@@ -343,6 +360,7 @@ export default function DriverTopBar() {
   const isLoggedIn = canShowSessionUI;
   const menuCity = cityLabel || cityName || "Tu ciudad";
   const userInitials = getInitials(driverName || "Conductor");
+  const driverAvatarSrc = normalizeProfileImageUrl(driverProfileImageUrl);
 
   const openBlockedModal = () => {
     setModalError(null);
@@ -509,14 +527,22 @@ export default function DriverTopBar() {
     title="Perfil"
   >
     {isLoggedIn ? (
-      <>
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-600 to-green-500" />
-        <div className="relative z-10 flex h-full w-full items-center justify-center rounded-full">
-          <span className="text-[13px] font-extrabold text-white">
-            {userInitials}
-          </span>
-        </div>
-      </>
+      driverAvatarSrc ? (
+        <img
+          src={driverAvatarSrc}
+          alt="Foto de perfil"
+          className="block h-full w-full object-cover"
+        />
+      ) : (
+        <>
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-600 to-green-500" />
+          <div className="relative z-10 flex h-full w-full items-center justify-center rounded-full">
+            <span className="text-[13px] font-extrabold text-white">
+              {userInitials}
+            </span>
+          </div>
+        </>
+      )
     ) : (
       <Image
         src="/avatar/default.png"
@@ -562,8 +588,12 @@ export default function DriverTopBar() {
               <div className="no-scrollbar max-h-[calc(100dvh-11.5rem)] overflow-y-auto">
                 <div className="border-b border-gray-100 bg-gradient-to-r from-blue-600 via-blue-500 to-green-500 px-4 py-2 text-white">
                   <div className="flex items-center gap-3">
-                    <div className="grid h-14 w-14 place-items-center rounded-full bg-white/20 font-extrabold ring-1 ring-white/20">
-                      {isLoggedIn ? userInitials : "KR"}
+                    <div className="grid h-14 w-14 place-items-center overflow-hidden rounded-full bg-white/20 font-extrabold ring-1 ring-white/20">
+                      {isLoggedIn && driverAvatarSrc ? (
+                        <img src={driverAvatarSrc} alt="Foto de perfil" className="block h-full w-full object-cover" />
+                      ) : (
+                        isLoggedIn ? userInitials : "KR"
+                      )}
                     </div>
 
                     <div className="min-w-0 flex-1">

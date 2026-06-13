@@ -1,7 +1,7 @@
 //app/(driver)/profile/info/page.tsx
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "../../../../lib/apiFetch";
 import { useDriverCity } from "../../components/DriverCityContext";
 
@@ -34,9 +34,6 @@ function normalizeProfileImageUrl(value?: string | null) {
 
 export default function DriverInfoPage() {
   const { cityLabel, cityName, loading: cityLoading } = useDriverCity();
-  const chooseInputRef = useRef<HTMLInputElement | null>(null);
-  const cameraInputRef = useRef<HTMLInputElement | null>(null);
-
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
@@ -99,13 +96,16 @@ export default function DriverInfoPage() {
 
       const nextUrl = String(uploaded?.profileImageUrl ?? "").trim();
       setForm((p) => ({ ...p, profileImageUrl: nextUrl }));
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("auth:changed"));
+        window.dispatchEvent(new Event("ct-auth-changed"));
+      }
+
       setOkMsg("Foto actualizada correctamente.");
     } catch (e: any) {
       setError(e?.message || "No pudimos subir la foto.");
     } finally {
       setUploadingPhoto(false);
-      if (chooseInputRef.current) chooseInputRef.current.value = "";
-      if (cameraInputRef.current) cameraInputRef.current.value = "";
     }
   }
 
@@ -199,6 +199,11 @@ export default function DriverInfoPage() {
       });
 
       setForm((p) => ({ ...p, profileImageUrl: "" }));
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("auth:changed"));
+        window.dispatchEvent(new Event("ct-auth-changed"));
+      }
+
       setOkMsg("Foto removida correctamente.");
     } catch (e: any) {
       setError(e?.message || "No se pudo quitar la foto.");
@@ -265,7 +270,7 @@ export default function DriverInfoPage() {
         style={{ width: size, height: size }}
       >
         {avatarSrc ? (
-          <img src={avatarSrc} alt="Foto de perfil" className="h-full w-full object-cover" />
+          <img key={avatarSrc} src={avatarSrc} alt="Foto de perfil" className="h-full w-full object-cover" />
         ) : (
           <div className="grid h-full w-full place-items-center text-sm font-extrabold">{avatar}</div>
         )}
@@ -322,23 +327,36 @@ export default function DriverInfoPage() {
 
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => chooseInputRef.current?.click()}
-                    disabled={uploadingPhoto}
-                    className="rounded-2xl bg-slate-900 px-4 py-3 text-xs font-extrabold text-white disabled:opacity-60"
+                  <label
+                    className={[
+                      "relative inline-flex cursor-pointer overflow-hidden rounded-2xl px-4 py-3 text-xs font-extrabold text-white",
+                      uploadingPhoto ? "pointer-events-none bg-slate-900 opacity-60" : "bg-slate-900",
+                    ].join(" ")}
                   >
                     Elegir foto
-                  </button>
+                    <input
+                      type="file"
+                      accept="image/*,.jpg,.jpeg,.png,.webp,.heic,.heif"
+                      className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                      onChange={(e) => handlePhotoFile(e.currentTarget.files?.[0] ?? null)}
+                    />
+                  </label>
 
-                  <button
-                    type="button"
-                    onClick={() => cameraInputRef.current?.click()}
-                    disabled={uploadingPhoto}
-                    className="rounded-2xl bg-emerald-600 px-4 py-3 text-xs font-extrabold text-white disabled:opacity-60"
+                  <label
+                    className={[
+                      "relative inline-flex cursor-pointer overflow-hidden rounded-2xl px-4 py-3 text-xs font-extrabold text-white",
+                      uploadingPhoto ? "pointer-events-none bg-emerald-600 opacity-60" : "bg-emerald-600",
+                    ].join(" ")}
                   >
                     Tomar foto
-                  </button>
+                    <input
+                      type="file"
+                      accept="image/*,.jpg,.jpeg,.png,.webp,.heic,.heif"
+                      capture="user"
+                      className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                      onChange={(e) => handlePhotoFile(e.currentTarget.files?.[0] ?? null)}
+                    />
+                  </label>
 
                   {form.profileImageUrl ? (
                     <button
@@ -351,23 +369,6 @@ export default function DriverInfoPage() {
                     </button>
                   ) : null}
                 </div>
-
-                <input
-                  ref={chooseInputRef}
-                  type="file"
-                  accept="image/*,.jpg,.jpeg,.png,.webp,.heic,.heif"
-                  className="hidden"
-                  onChange={(e) => handlePhotoFile(e.currentTarget.files?.[0] ?? null)}
-                />
-
-                <input
-                  ref={cameraInputRef}
-                  type="file"
-                  accept="image/*,.jpg,.jpeg,.png,.webp,.heic,.heif"
-                  capture="user"
-                  className="hidden"
-                  onChange={(e) => handlePhotoFile(e.currentTarget.files?.[0] ?? null)}
-                />
 
                 <div className="mt-2 text-[11px] text-gray-500">
                   {uploadingPhoto ? "Subiendo foto…" : "La foto se guarda automáticamente al elegirla o tomarla."}

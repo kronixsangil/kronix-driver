@@ -1,8 +1,7 @@
 //app/(driver)/profile/info/page.tsx
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import Image from "next/image";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch } from "../../../../lib/apiFetch";
 import { useDriverCity } from "../../components/DriverCityContext";
 
@@ -16,14 +15,47 @@ function normalizeFullName(u: any) {
   );
 }
 
+function initialsOf(name?: string | null, email?: string | null) {
+  const base = String(name || "").trim() || String(email || "").split("@")[0] || "";
+  const parts = base
+    .replace(/[._-]/g, " ")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+
+  const a = parts[0]?.[0] ?? "D";
+  const b = parts.length > 1 ? parts[1]?.[0] : parts[0]?.[1];
+  return (a + (b ?? "")).toUpperCase();
+}
+
+function ProfileAvatar({ src, fallback, sizeClass }: { src?: string | null; fallback: string; sizeClass: string }) {
+  const cleanSrc = String(src ?? "").trim();
+
+  return (
+    <div className={`relative overflow-hidden rounded-2xl bg-slate-900 text-white font-extrabold ${sizeClass}`}>
+      {cleanSrc ? (
+        // Usamos <img> para soportar data:image/base64 sin fallos de next/image.
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={cleanSrc} alt="Foto de perfil" className="h-full w-full object-cover" />
+      ) : (
+        <div className="grid h-full w-full place-items-center text-sm font-extrabold">{fallback}</div>
+      )}
+    </div>
+  );
+}
+
 export default function DriverInfoPage() {
   const { cityLabel, cityName, loading: cityLoading } = useDriverCity();
+
+  const galleryInputRef = useRef<HTMLInputElement | null>(null);
+  const cameraInputRef = useRef<HTMLInputElement | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   const [source, setSource] = useState<"drivers/me" | "auth/me" | "none">("none");
   const [error, setError] = useState<string>("");
+  const [success, setSuccess] = useState<string>("");
 
   const [form, setForm] = useState({
     fullName: "",
@@ -41,18 +73,35 @@ export default function DriverInfoPage() {
 
   const cityText = cityLoading ? "Cargando ciudad..." : cityLabel || cityName || "Ciudad no asignada";
 
+  const avatar = useMemo(
+    () => initialsOf(form.fullName, form.email),
+    [form.fullName, form.email]
+  );
+
   function handlePhotoFile(file: File | null) {
+    setError("");
+    setSuccess("");
+
     if (!file) return;
+
     if (!file.type.startsWith("image/")) {
       setError("Selecciona una imagen válida.");
       return;
     }
+
     if (file.size > 750_000) {
       setError("La foto debe pesar máximo 750 KB.");
       return;
     }
+
     const reader = new FileReader();
-    reader.onload = () => setForm((p) => ({ ...p, profileImageUrl: String(reader.result ?? "") }));
+    reader.onload = () => {
+      setForm((p) => ({ ...p, profileImageUrl: String(reader.result ?? "") }));
+      setSuccess("Foto cargada. Presiona Guardar cambios para aplicarla.");
+    };
+    reader.onerror = () => {
+      setError("No pudimos leer la foto. Intenta con otra imagen.");
+    };
     reader.readAsDataURL(file);
   }
 
@@ -62,6 +111,7 @@ export default function DriverInfoPage() {
     async function load() {
       setLoading(true);
       setError("");
+      setSuccess("");
 
       try {
         const out = await apiFetch<any>("/drivers/me", { method: "GET", cache: "no-store" });
@@ -127,6 +177,7 @@ export default function DriverInfoPage() {
   async function save() {
     setSaving(true);
     setError("");
+    setSuccess("");
 
     try {
       await apiFetch("/drivers/me", {
@@ -155,7 +206,12 @@ export default function DriverInfoPage() {
         setSource("drivers/me");
       } catch {}
 
-      alert("✅ Guardado correctamente");
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("auth:changed"));
+        window.dispatchEvent(new Event("driver-auth-changed"));
+      }
+
+      setSuccess("✅ Guardado correctamente.");
     } catch (e: any) {
       const msg = String(e?.message || "").toLowerCase();
 
@@ -203,6 +259,12 @@ export default function DriverInfoPage() {
             </div>
           ) : null}
 
+          {success ? (
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-bold text-emerald-800">
+              {success}
+            </div>
+          ) : null}
+
           <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
             <div className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Ciudad operativa</div>
             <div className="mt-1 text-sm font-extrabold text-slate-900">{cityText}</div>
@@ -214,24 +276,63 @@ export default function DriverInfoPage() {
           <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
             <div className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Foto de perfil</div>
             <div className="mt-3 flex items-center gap-3">
-              <div className="relative h-16 w-16 overflow-hidden rounded-2xl bg-slate-900 text-white ring-1 ring-slate-200">
-                {form.profileImageUrl ? (
-                  <Image src={form.profileImageUrl} alt="Foto de perfil" fill className="object-cover" sizes="64px" />
-                ) : (
-                  <div className="grid h-full w-full place-items-center text-sm font-extrabold">Foto</div>
-                )}
-              </div>
+              <ProfileAvatar src={form.profileImageUrl} fallback={avatar} sizeClass="h-16 w-16 ring-1 ring-slate-200" />
+
               <div className="min-w-0 flex-1">
-                <label className="inline-flex cursor-pointer rounded-2xl bg-slate-900 px-4 py-3 text-xs font-extrabold text-white">
-                  Elegir foto
-                  <input type="file" accept="image/*" className="hidden" onChange={(e) => handlePhotoFile(e.target.files?.[0] ?? null)} />
-                </label>
-                {form.profileImageUrl ? (
-                  <button type="button" onClick={() => setForm((p) => ({ ...p, profileImageUrl: "" }))} className="ml-2 rounded-2xl border border-gray-200 px-4 py-3 text-xs font-extrabold text-gray-700">
-                    Quitar
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => galleryInputRef.current?.click()}
+                    className="rounded-2xl bg-slate-900 px-4 py-3 text-xs font-extrabold text-white active:scale-[0.99]"
+                  >
+                    Elegir foto
                   </button>
-                ) : null}
-                <div className="mt-2 text-[11px] text-gray-500">Máximo 750 KB.</div>
+
+                  <button
+                    type="button"
+                    onClick={() => cameraInputRef.current?.click()}
+                    className="rounded-2xl bg-emerald-600 px-4 py-3 text-xs font-extrabold text-white active:scale-[0.99]"
+                  >
+                    Tomar foto
+                  </button>
+
+                  {form.profileImageUrl ? (
+                    <button
+                      type="button"
+                      onClick={() => setForm((p) => ({ ...p, profileImageUrl: "" }))}
+                      className="rounded-2xl border border-gray-200 px-4 py-3 text-xs font-extrabold text-gray-700"
+                    >
+                      Quitar
+                    </button>
+                  ) : null}
+                </div>
+
+                <input
+                  ref={galleryInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    handlePhotoFile(e.target.files?.[0] ?? null);
+                    e.currentTarget.value = "";
+                  }}
+                />
+
+                <input
+                  ref={cameraInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="user"
+                  className="hidden"
+                  onChange={(e) => {
+                    handlePhotoFile(e.target.files?.[0] ?? null);
+                    e.currentTarget.value = "";
+                  }}
+                />
+
+                <div className="mt-2 text-[11px] text-gray-500">
+                  Máximo 750 KB. Recuerda guardar cambios.
+                </div>
               </div>
             </div>
           </div>

@@ -1,5 +1,4 @@
 //app/(driver)/profile/info/page.tsx
-// app/(driver)/profile/info/page.tsx
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -18,77 +17,63 @@ function normalizeFullName(u: any) {
 
 function initialsOf(name?: string | null, email?: string | null) {
   const base = String(name || "").trim() || String(email || "").split("@")[0] || "";
-  const parts = base
-    .replace(/[._-]/g, " ")
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean);
-
-  const a = parts[0]?.[0] ?? "KR";
+  const parts = base.replace(/[._-]/g, " ").trim().split(/\s+/).filter(Boolean);
+  const a = parts[0]?.[0] ?? "DR";
   const b = parts.length > 1 ? parts[1]?.[0] : parts[0]?.[1];
   return (a + (b ?? "")).toUpperCase();
 }
 
-async function imageFileToCompressedDataUrl(file: File) {
+async function fileToCompressedDataUrl(file: File): Promise<string> {
   if (!file.type.startsWith("image/")) {
     throw new Error("Selecciona una imagen válida.");
   }
 
-  const rawUrl = URL.createObjectURL(file);
+  const objectUrl = URL.createObjectURL(file);
 
   try {
     const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-      const image = new window.Image();
-      image.onload = () => resolve(image);
-      image.onerror = () => reject(new Error("No pudimos leer la imagen."));
-      image.src = rawUrl;
+      const el = document.createElement("img");
+      el.onload = () => resolve(el);
+      el.onerror = () => reject(new Error("No pudimos leer la foto. Intenta con otra imagen."));
+      el.src = objectUrl;
     });
 
-    const maxSide = 520;
-    const width = img.naturalWidth || img.width;
-    const height = img.naturalHeight || img.height;
-    const ratio = Math.min(1, maxSide / Math.max(width, height));
+    const srcW = img.naturalWidth || img.width;
+    const srcH = img.naturalHeight || img.height;
+
+    if (!srcW || !srcH) throw new Error("La foto no tiene dimensiones válidas.");
+
+    const cropSize = Math.min(srcW, srcH);
+    const sx = Math.max(0, Math.floor((srcW - cropSize) / 2));
+    const sy = Math.max(0, Math.floor((srcH - cropSize) / 2));
+    const outputSize = 512;
+
     const canvas = document.createElement("canvas");
-    canvas.width = Math.max(1, Math.round(width * ratio));
-    canvas.height = Math.max(1, Math.round(height * ratio));
+    canvas.width = outputSize;
+    canvas.height = outputSize;
 
     const ctx = canvas.getContext("2d");
-    if (!ctx) throw new Error("No pudimos preparar la imagen.");
+    if (!ctx) throw new Error("Tu navegador no permitió procesar la imagen.");
 
-    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, sx, sy, cropSize, cropSize, 0, 0, outputSize, outputSize);
 
-    let quality = 0.82;
+    let quality = 0.78;
     let dataUrl = canvas.toDataURL("image/jpeg", quality);
 
-    while (dataUrl.length > 700_000 && quality > 0.45) {
+    while (dataUrl.length > 720_000 && quality > 0.45) {
       quality -= 0.08;
       dataUrl = canvas.toDataURL("image/jpeg", quality);
     }
 
+    if (!dataUrl.startsWith("data:image/")) throw new Error("No pudimos preparar la foto.");
     if (dataUrl.length > 800_000) {
-      throw new Error("La foto quedó demasiado pesada. Intenta con otra imagen.");
+      throw new Error("La foto sigue siendo muy pesada. Intenta tomarla más cerca o usar otra imagen.");
     }
 
     return dataUrl;
   } finally {
-    URL.revokeObjectURL(rawUrl);
+    URL.revokeObjectURL(objectUrl);
   }
-}
-
-function AvatarPreview({ src, fallback, sizeClass }: { src: string; fallback: string; sizeClass: string }) {
-  return (
-    <div className={`relative overflow-hidden bg-slate-900 text-white font-extrabold ${sizeClass}`}>
-      {src ? (
-        <img
-          src={src}
-          alt="Foto de perfil"
-          className="h-full w-full object-cover"
-        />
-      ) : (
-        <div className="grid h-full w-full place-items-center text-sm font-extrabold">{fallback}</div>
-      )}
-    </div>
-  );
 }
 
 export default function DriverInfoPage() {
@@ -98,11 +83,11 @@ export default function DriverInfoPage() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [photoLoading, setPhotoLoading] = useState(false);
+  const [processingPhoto, setProcessingPhoto] = useState(false);
 
   const [source, setSource] = useState<"drivers/me" | "auth/me" | "none">("none");
   const [error, setError] = useState<string>("");
-  const [success, setSuccess] = useState<string>("");
+  const [okMsg, setOkMsg] = useState<string>("");
 
   const [form, setForm] = useState({
     fullName: "",
@@ -111,31 +96,32 @@ export default function DriverInfoPage() {
     profileImageUrl: "",
   });
 
+  const avatar = useMemo(() => initialsOf(form.fullName, form.email), [form.fullName, form.email]);
+
   const canSave = useMemo(() => {
     const fn = String(form.fullName || "").trim();
     const em = String(form.email || "").trim();
     const ph = String(form.phone || "").trim();
-    return fn.length >= 2 && (em.length > 0 || ph.length > 0) && !photoLoading;
-  }, [form, photoLoading]);
+    return fn.length >= 2 && (em.length > 0 || ph.length > 0) && !processingPhoto;
+  }, [form, processingPhoto]);
 
-  const avatar = useMemo(() => initialsOf(form.fullName, form.email), [form.fullName, form.email]);
   const cityText = cityLoading ? "Cargando ciudad..." : cityLabel || cityName || "Ciudad no asignada";
 
   async function handlePhotoFile(file: File | null) {
     if (!file) return;
 
     setError("");
-    setSuccess("");
-    setPhotoLoading(true);
+    setOkMsg("");
+    setProcessingPhoto(true);
 
     try {
-      const dataUrl = await imageFileToCompressedDataUrl(file);
+      const dataUrl = await fileToCompressedDataUrl(file);
       setForm((p) => ({ ...p, profileImageUrl: dataUrl }));
-      setSuccess("Foto cargada. Ahora presiona Guardar cambios.");
+      setOkMsg("Foto cargada. Ahora toca Guardar cambios.");
     } catch (e: any) {
-      setError(String(e?.message ?? "No pudimos cargar la foto."));
+      setError(e?.message || "No pudimos cargar la foto.");
     } finally {
-      setPhotoLoading(false);
+      setProcessingPhoto(false);
       if (chooseInputRef.current) chooseInputRef.current.value = "";
       if (cameraInputRef.current) cameraInputRef.current.value = "";
     }
@@ -147,7 +133,7 @@ export default function DriverInfoPage() {
     async function load() {
       setLoading(true);
       setError("");
-      setSuccess("");
+      setOkMsg("");
 
       try {
         const out = await apiFetch<any>("/drivers/me", { method: "GET", cache: "no-store" });
@@ -213,7 +199,7 @@ export default function DriverInfoPage() {
   async function save() {
     setSaving(true);
     setError("");
-    setSuccess("");
+    setOkMsg("");
 
     try {
       await apiFetch("/drivers/me", {
@@ -237,17 +223,12 @@ export default function DriverInfoPage() {
           fullName: String(fullName || "").trim(),
           email: String(u?.email ?? "").trim(),
           phone: String(u?.phone ?? "").trim(),
-          profileImageUrl: String(u?.profileImageUrl ?? form.profileImageUrl).trim(),
+          profileImageUrl: String(u?.profileImageUrl ?? "").trim(),
         });
         setSource("drivers/me");
       } catch {}
 
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(new Event("driver-auth-changed"));
-        window.dispatchEvent(new Event("auth:changed"));
-      }
-
-      setSuccess("Guardado correctamente.");
+      setOkMsg("Guardado correctamente.");
     } catch (e: any) {
       const msg = String(e?.message || "").toLowerCase();
 
@@ -265,6 +246,21 @@ export default function DriverInfoPage() {
     } finally {
       setSaving(false);
     }
+  }
+
+  function AvatarBox({ size = 64 }: { size?: number }) {
+    return (
+      <div
+        className="overflow-hidden rounded-2xl bg-slate-900 text-white ring-1 ring-slate-200"
+        style={{ width: size, height: size }}
+      >
+        {form.profileImageUrl ? (
+          <img src={form.profileImageUrl} alt="Foto de perfil" className="h-full w-full object-cover" />
+        ) : (
+          <div className="grid h-full w-full place-items-center text-sm font-extrabold">{avatar}</div>
+        )}
+      </div>
+    );
   }
 
   return (
@@ -295,9 +291,9 @@ export default function DriverInfoPage() {
             </div>
           ) : null}
 
-          {success ? (
+          {okMsg ? (
             <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-bold text-emerald-800">
-              {success}
+              {okMsg}
             </div>
           ) : null}
 
@@ -312,24 +308,24 @@ export default function DriverInfoPage() {
           <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
             <div className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Foto de perfil</div>
             <div className="mt-3 flex items-center gap-3">
-              <AvatarPreview src={form.profileImageUrl} fallback={avatar} sizeClass="h-16 w-16 rounded-2xl ring-1 ring-slate-200" />
+              <AvatarBox size={64} />
 
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap gap-2">
                   <button
                     type="button"
-                    disabled={photoLoading}
                     onClick={() => chooseInputRef.current?.click()}
-                    className="rounded-2xl bg-slate-900 px-4 py-3 text-xs font-extrabold text-white active:scale-[0.99] disabled:opacity-60"
+                    disabled={processingPhoto}
+                    className="rounded-2xl bg-slate-900 px-4 py-3 text-xs font-extrabold text-white disabled:opacity-60"
                   >
                     Elegir foto
                   </button>
 
                   <button
                     type="button"
-                    disabled={photoLoading}
                     onClick={() => cameraInputRef.current?.click()}
-                    className="rounded-2xl bg-emerald-600 px-4 py-3 text-xs font-extrabold text-white active:scale-[0.99] disabled:opacity-60"
+                    disabled={processingPhoto}
+                    className="rounded-2xl bg-emerald-600 px-4 py-3 text-xs font-extrabold text-white disabled:opacity-60"
                   >
                     Tomar foto
                   </button>
@@ -337,7 +333,10 @@ export default function DriverInfoPage() {
                   {form.profileImageUrl ? (
                     <button
                       type="button"
-                      onClick={() => setForm((p) => ({ ...p, profileImageUrl: "" }))}
+                      onClick={() => {
+                        setForm((p) => ({ ...p, profileImageUrl: "" }));
+                        setOkMsg("Foto removida. Toca Guardar cambios para confirmar.");
+                      }}
                       className="rounded-2xl border border-gray-200 px-4 py-3 text-xs font-extrabold text-gray-700"
                     >
                       Quitar
@@ -350,19 +349,20 @@ export default function DriverInfoPage() {
                   type="file"
                   accept="image/*"
                   className="hidden"
-                  onChange={(e) => handlePhotoFile(e.target.files?.[0] ?? null)}
+                  onChange={(e) => handlePhotoFile(e.currentTarget.files?.[0] ?? null)}
                 />
+
                 <input
                   ref={cameraInputRef}
                   type="file"
                   accept="image/*"
                   capture="user"
                   className="hidden"
-                  onChange={(e) => handlePhotoFile(e.target.files?.[0] ?? null)}
+                  onChange={(e) => handlePhotoFile(e.currentTarget.files?.[0] ?? null)}
                 />
 
                 <div className="mt-2 text-[11px] text-gray-500">
-                  {photoLoading ? "Procesando foto…" : "Recuerda guardar cambios."}
+                  {processingPhoto ? "Procesando foto…" : "Máximo 750 KB. Después de verla aquí, toca Guardar cambios."}
                 </div>
               </div>
             </div>
@@ -396,7 +396,7 @@ export default function DriverInfoPage() {
               !canSave || saving || loading ? "bg-gray-200 text-gray-500" : "bg-emerald-600 text-white",
             ].join(" ")}
           >
-            {saving ? "Guardando…" : "Guardar cambios"}
+            {saving ? "Guardando…" : processingPhoto ? "Procesando foto…" : "Guardar cambios"}
           </button>
 
           <p className="text-[11px] text-gray-500">

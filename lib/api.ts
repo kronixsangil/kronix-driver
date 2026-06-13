@@ -18,8 +18,11 @@ export async function apiFetch<T>(
   if (!API_BASE) throw { status: 0, message: "Falta NEXT_PUBLIC_API en .env.local" };
 
   const headers = new Headers(options.headers || {});
-  // Solo forzamos JSON si no existe ya (evita problemas en casos raros)
-  if (!headers.has("Content-Type")) headers.set("Content-Type", "application/json");
+  const isFormData =
+    typeof FormData !== "undefined" && options.body instanceof FormData;
+
+  // Solo forzamos JSON si no existe ya y no es FormData.
+  if (!isFormData && !headers.has("Content-Type")) headers.set("Content-Type", "application/json");
 
   // Soporte legacy por si alguna parte aún usa Bearer (no estorba)
   if (accessToken) headers.set("Authorization", `Bearer ${accessToken}`);

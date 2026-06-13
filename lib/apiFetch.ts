@@ -81,7 +81,10 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
   }
 
   const hasBody = options.body != null && method !== "GET" && method !== "HEAD";
-  if (hasBody && !headers.has("Content-Type")) {
+  const isFormData =
+    typeof FormData !== "undefined" && options.body instanceof FormData;
+
+  if (hasBody && !isFormData && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
 

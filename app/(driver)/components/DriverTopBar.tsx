@@ -82,13 +82,60 @@ function getInitials(name: string) {
   return (a + b).toUpperCase();
 }
 
-function normalizeProfileImageUrl(value?: string | null) {
-  const raw = String(value ?? "").trim();
-  if (!raw) return "";
+function encodePathFileName(fileName: string) {
+  return fileName
+    .split("/")
+    .map((part) => encodeURIComponent(part))
+    .join("/");
+}
+
+function buildOfficialDriverPhotoSrc(profileImageUrl?: string | null, driverName?: string | null) {
+  const raw = String(profileImageUrl ?? "").trim();
+
   if (raw.startsWith("http://") || raw.startsWith("https://") || raw.startsWith("data:")) return raw;
-  if (raw.startsWith("/api/")) return raw;
-  if (raw.startsWith("/")) return `/api/driver${raw}`;
-  return raw;
+  if (raw.startsWith("/branding/Driver_Pictures/")) return encodePathFileName(raw);
+
+  const name = String(driverName ?? "").trim();
+  if (!name) return "";
+
+  return `/branding/Driver_Pictures/${encodeURIComponent(name)}.jpg`;
+}
+
+function OfficialDriverAvatar({
+  src,
+  initials,
+  className,
+}: {
+  src: string;
+  initials: string;
+  className: string;
+}) {
+  const [failed, setFailed] = useState(false);
+  const finalSrc = failed ? "" : String(src || "").trim();
+
+  useEffect(() => {
+    setFailed(false);
+  }, [src]);
+
+  return (
+    <div className={className}>
+      {finalSrc ? (
+        <img
+          src={finalSrc}
+          alt="Foto oficial del conductor"
+          className="block h-full w-full object-cover"
+          onError={() => setFailed(true)}
+        />
+      ) : (
+        <>
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-600 to-green-500" />
+          <div className="relative z-10 flex h-full w-full items-center justify-center rounded-full">
+            <span className="text-[13px] font-extrabold text-white">{initials}</span>
+          </div>
+        </>
+      )}
+    </div>
+  );
 }
 
 
@@ -360,7 +407,7 @@ export default function DriverTopBar() {
   const isLoggedIn = canShowSessionUI;
   const menuCity = cityLabel || cityName || "Tu ciudad";
   const userInitials = getInitials(driverName || "Conductor");
-  const driverAvatarSrc = normalizeProfileImageUrl(driverProfileImageUrl);
+  const driverAvatarSrc = buildOfficialDriverPhotoSrc(driverProfileImageUrl, driverName);
 
   const openBlockedModal = () => {
     setModalError(null);
@@ -527,22 +574,11 @@ export default function DriverTopBar() {
     title="Perfil"
   >
     {isLoggedIn ? (
-      driverAvatarSrc ? (
-        <img
-          src={driverAvatarSrc}
-          alt="Foto de perfil"
-          className="block h-full w-full object-cover"
-        />
-      ) : (
-        <>
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-600 to-green-500" />
-          <div className="relative z-10 flex h-full w-full items-center justify-center rounded-full">
-            <span className="text-[13px] font-extrabold text-white">
-              {userInitials}
-            </span>
-          </div>
-        </>
-      )
+      <OfficialDriverAvatar
+        src={driverAvatarSrc}
+        initials={userInitials}
+        className="relative h-full w-full overflow-hidden rounded-full"
+      />
     ) : (
       <Image
         src="/avatar/default.png"
@@ -588,13 +624,17 @@ export default function DriverTopBar() {
               <div className="no-scrollbar max-h-[calc(100dvh-11.5rem)] overflow-y-auto">
                 <div className="border-b border-gray-100 bg-gradient-to-r from-blue-600 via-blue-500 to-green-500 px-4 py-2 text-white">
                   <div className="flex items-center gap-3">
-                    <div className="grid h-14 w-14 place-items-center overflow-hidden rounded-full bg-white/20 font-extrabold ring-1 ring-white/20">
-                      {isLoggedIn && driverAvatarSrc ? (
-                        <img src={driverAvatarSrc} alt="Foto de perfil" className="block h-full w-full object-cover" />
-                      ) : (
-                        isLoggedIn ? userInitials : "KR"
-                      )}
-                    </div>
+                    {isLoggedIn ? (
+                      <OfficialDriverAvatar
+                        src={driverAvatarSrc}
+                        initials={userInitials}
+                        className="relative grid h-14 w-14 place-items-center overflow-hidden rounded-full bg-white/20 font-extrabold ring-1 ring-white/20"
+                      />
+                    ) : (
+                      <div className="grid h-14 w-14 place-items-center overflow-hidden rounded-full bg-white/20 font-extrabold ring-1 ring-white/20">
+                        KR
+                      </div>
+                    )}
 
                     <div className="min-w-0 flex-1">
                       <div className="truncate text-lg font-extrabold">

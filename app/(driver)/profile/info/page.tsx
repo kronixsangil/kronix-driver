@@ -1,4 +1,5 @@
 //app/(driver)/profile/info/page.tsx
+// app/(driver)/profile/info/page.tsx
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -23,20 +24,66 @@ function initialsOf(name?: string | null, email?: string | null) {
     .split(/\s+/)
     .filter(Boolean);
 
-  const a = parts[0]?.[0] ?? "D";
+  const a = parts[0]?.[0] ?? "KR";
   const b = parts.length > 1 ? parts[1]?.[0] : parts[0]?.[1];
   return (a + (b ?? "")).toUpperCase();
 }
 
-function ProfileAvatar({ src, fallback, sizeClass }: { src?: string | null; fallback: string; sizeClass: string }) {
-  const cleanSrc = String(src ?? "").trim();
+async function imageFileToCompressedDataUrl(file: File) {
+  if (!file.type.startsWith("image/")) {
+    throw new Error("Selecciona una imagen válida.");
+  }
 
+  const rawUrl = URL.createObjectURL(file);
+
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const image = new window.Image();
+      image.onload = () => resolve(image);
+      image.onerror = () => reject(new Error("No pudimos leer la imagen."));
+      image.src = rawUrl;
+    });
+
+    const maxSide = 520;
+    const width = img.naturalWidth || img.width;
+    const height = img.naturalHeight || img.height;
+    const ratio = Math.min(1, maxSide / Math.max(width, height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(width * ratio));
+    canvas.height = Math.max(1, Math.round(height * ratio));
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("No pudimos preparar la imagen.");
+
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+    let quality = 0.82;
+    let dataUrl = canvas.toDataURL("image/jpeg", quality);
+
+    while (dataUrl.length > 700_000 && quality > 0.45) {
+      quality -= 0.08;
+      dataUrl = canvas.toDataURL("image/jpeg", quality);
+    }
+
+    if (dataUrl.length > 800_000) {
+      throw new Error("La foto quedó demasiado pesada. Intenta con otra imagen.");
+    }
+
+    return dataUrl;
+  } finally {
+    URL.revokeObjectURL(rawUrl);
+  }
+}
+
+function AvatarPreview({ src, fallback, sizeClass }: { src: string; fallback: string; sizeClass: string }) {
   return (
-    <div className={`relative overflow-hidden rounded-2xl bg-slate-900 text-white font-extrabold ${sizeClass}`}>
-      {cleanSrc ? (
-        // Usamos <img> para soportar data:image/base64 sin fallos de next/image.
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={cleanSrc} alt="Foto de perfil" className="h-full w-full object-cover" />
+    <div className={`relative overflow-hidden bg-slate-900 text-white font-extrabold ${sizeClass}`}>
+      {src ? (
+        <img
+          src={src}
+          alt="Foto de perfil"
+          className="h-full w-full object-cover"
+        />
       ) : (
         <div className="grid h-full w-full place-items-center text-sm font-extrabold">{fallback}</div>
       )}
@@ -46,12 +93,12 @@ function ProfileAvatar({ src, fallback, sizeClass }: { src?: string | null; fall
 
 export default function DriverInfoPage() {
   const { cityLabel, cityName, loading: cityLoading } = useDriverCity();
-
-  const galleryInputRef = useRef<HTMLInputElement | null>(null);
+  const chooseInputRef = useRef<HTMLInputElement | null>(null);
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [photoLoading, setPhotoLoading] = useState(false);
 
   const [source, setSource] = useState<"drivers/me" | "auth/me" | "none">("none");
   const [error, setError] = useState<string>("");
@@ -68,41 +115,30 @@ export default function DriverInfoPage() {
     const fn = String(form.fullName || "").trim();
     const em = String(form.email || "").trim();
     const ph = String(form.phone || "").trim();
-    return fn.length >= 2 && (em.length > 0 || ph.length > 0);
-  }, [form]);
+    return fn.length >= 2 && (em.length > 0 || ph.length > 0) && !photoLoading;
+  }, [form, photoLoading]);
 
+  const avatar = useMemo(() => initialsOf(form.fullName, form.email), [form.fullName, form.email]);
   const cityText = cityLoading ? "Cargando ciudad..." : cityLabel || cityName || "Ciudad no asignada";
 
-  const avatar = useMemo(
-    () => initialsOf(form.fullName, form.email),
-    [form.fullName, form.email]
-  );
-
-  function handlePhotoFile(file: File | null) {
-    setError("");
-    setSuccess("");
-
+  async function handlePhotoFile(file: File | null) {
     if (!file) return;
 
-    if (!file.type.startsWith("image/")) {
-      setError("Selecciona una imagen válida.");
-      return;
-    }
+    setError("");
+    setSuccess("");
+    setPhotoLoading(true);
 
-    if (file.size > 750_000) {
-      setError("La foto debe pesar máximo 750 KB.");
-      return;
+    try {
+      const dataUrl = await imageFileToCompressedDataUrl(file);
+      setForm((p) => ({ ...p, profileImageUrl: dataUrl }));
+      setSuccess("Foto cargada. Ahora presiona Guardar cambios.");
+    } catch (e: any) {
+      setError(String(e?.message ?? "No pudimos cargar la foto."));
+    } finally {
+      setPhotoLoading(false);
+      if (chooseInputRef.current) chooseInputRef.current.value = "";
+      if (cameraInputRef.current) cameraInputRef.current.value = "";
     }
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      setForm((p) => ({ ...p, profileImageUrl: String(reader.result ?? "") }));
-      setSuccess("Foto cargada. Presiona Guardar cambios para aplicarla.");
-    };
-    reader.onerror = () => {
-      setError("No pudimos leer la foto. Intenta con otra imagen.");
-    };
-    reader.readAsDataURL(file);
   }
 
   useEffect(() => {
@@ -201,17 +237,17 @@ export default function DriverInfoPage() {
           fullName: String(fullName || "").trim(),
           email: String(u?.email ?? "").trim(),
           phone: String(u?.phone ?? "").trim(),
-          profileImageUrl: String(u?.profileImageUrl ?? "").trim(),
+          profileImageUrl: String(u?.profileImageUrl ?? form.profileImageUrl).trim(),
         });
         setSource("drivers/me");
       } catch {}
 
       if (typeof window !== "undefined") {
-        window.dispatchEvent(new Event("auth:changed"));
         window.dispatchEvent(new Event("driver-auth-changed"));
+        window.dispatchEvent(new Event("auth:changed"));
       }
 
-      setSuccess("✅ Guardado correctamente.");
+      setSuccess("Guardado correctamente.");
     } catch (e: any) {
       const msg = String(e?.message || "").toLowerCase();
 
@@ -276,22 +312,24 @@ export default function DriverInfoPage() {
           <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
             <div className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Foto de perfil</div>
             <div className="mt-3 flex items-center gap-3">
-              <ProfileAvatar src={form.profileImageUrl} fallback={avatar} sizeClass="h-16 w-16 ring-1 ring-slate-200" />
+              <AvatarPreview src={form.profileImageUrl} fallback={avatar} sizeClass="h-16 w-16 rounded-2xl ring-1 ring-slate-200" />
 
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap gap-2">
                   <button
                     type="button"
-                    onClick={() => galleryInputRef.current?.click()}
-                    className="rounded-2xl bg-slate-900 px-4 py-3 text-xs font-extrabold text-white active:scale-[0.99]"
+                    disabled={photoLoading}
+                    onClick={() => chooseInputRef.current?.click()}
+                    className="rounded-2xl bg-slate-900 px-4 py-3 text-xs font-extrabold text-white active:scale-[0.99] disabled:opacity-60"
                   >
                     Elegir foto
                   </button>
 
                   <button
                     type="button"
+                    disabled={photoLoading}
                     onClick={() => cameraInputRef.current?.click()}
-                    className="rounded-2xl bg-emerald-600 px-4 py-3 text-xs font-extrabold text-white active:scale-[0.99]"
+                    className="rounded-2xl bg-emerald-600 px-4 py-3 text-xs font-extrabold text-white active:scale-[0.99] disabled:opacity-60"
                   >
                     Tomar foto
                   </button>
@@ -308,30 +346,23 @@ export default function DriverInfoPage() {
                 </div>
 
                 <input
-                  ref={galleryInputRef}
+                  ref={chooseInputRef}
                   type="file"
                   accept="image/*"
                   className="hidden"
-                  onChange={(e) => {
-                    handlePhotoFile(e.target.files?.[0] ?? null);
-                    e.currentTarget.value = "";
-                  }}
+                  onChange={(e) => handlePhotoFile(e.target.files?.[0] ?? null)}
                 />
-
                 <input
                   ref={cameraInputRef}
                   type="file"
                   accept="image/*"
                   capture="user"
                   className="hidden"
-                  onChange={(e) => {
-                    handlePhotoFile(e.target.files?.[0] ?? null);
-                    e.currentTarget.value = "";
-                  }}
+                  onChange={(e) => handlePhotoFile(e.target.files?.[0] ?? null)}
                 />
 
                 <div className="mt-2 text-[11px] text-gray-500">
-                  Máximo 750 KB. Recuerda guardar cambios.
+                  {photoLoading ? "Procesando foto…" : "Recuerda guardar cambios."}
                 </div>
               </div>
             </div>

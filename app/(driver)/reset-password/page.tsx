@@ -153,7 +153,7 @@ export default function DriverForgotPasswordPage() {
                 onChange={(e) => setEmailOrPhone(e.target.value)}
                 placeholder="Ingresa tu email o número"
                 autoComplete="username"
-                className="mt-2 w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm bg-gray-50 focus:bg-white focus:border-blue-500 outline-none transition"
+                className="mt-2 w-full rounded-[20px] border border-slate-200 bg-slate-50 px-4 py-4 text-[15px] font-semibold text-slate-900 outline-none transition placeholder:font-medium placeholder:text-slate-400 focus:border-blue-300 focus:bg-white"
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && step === 1 && canRequest) requestCode();
                 }}
@@ -172,7 +172,7 @@ export default function DriverForgotPasswordPage() {
                     onChange={(e) => setCode(e.target.value)}
                     placeholder="Ej: 123456"
                     inputMode="numeric"
-                    className="mt-2 w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm bg-gray-50 focus:bg-white focus:border-blue-500 outline-none transition"
+                    className="mt-2 w-full rounded-[20px] border border-slate-200 bg-slate-50 px-4 py-4 text-[15px] font-semibold text-slate-900 outline-none transition placeholder:font-medium placeholder:text-slate-400 focus:border-blue-300 focus:bg-white"
                   />
                 </div>
 

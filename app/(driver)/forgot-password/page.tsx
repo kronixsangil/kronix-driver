@@ -106,7 +106,7 @@ export default function DriverForgotPasswordPage() {
                     }}
                     placeholder="Ingresa tu email o número"
                     autoComplete="username"
-                    className="mt-2 h-[48px] w-full rounded-[16px] border border-slate-200 bg-slate-50 px-4 text-[14px] font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-sky-400 focus:bg-white focus:ring-4 focus:ring-sky-100"
+                    className="mt-2 w-full rounded-[20px] border border-slate-200 bg-slate-50 px-4 py-4 text-[15px] font-semibold text-slate-900 outline-none transition placeholder:font-medium placeholder:text-slate-400 focus:border-blue-300 focus:bg-white"
                     onKeyDown={(e) => {
                       if (e.key === "Enter" && canSubmit) handleSubmit();
                     }}

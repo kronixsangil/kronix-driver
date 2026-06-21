@@ -827,6 +827,8 @@ const [checkingPrivacy, setCheckingPrivacy] = useState(true);
   const seenAvailableIdsRef = useRef<Set<string>>(new Set());
   const lastAvailRefreshNotifyAtRef = useRef<number>(0);
   const reminder30TimeoutRef = useRef<any>(null);
+  const priorityWakeupTimersRef = useRef<number[]>([]);
+  const priorityWakeupStartedAtRef = useRef<number>(0);
 
   const [mapSrc, setMapSrc] = useState<string>("/maps/driver-generic.png");
 
@@ -1233,6 +1235,61 @@ assignedStepRef.current = safeStep;
   }
 }, [canOperate]);
 
+  const clearPriorityWakeups = useCallback(() => {
+    for (const timer of priorityWakeupTimersRef.current) {
+      window.clearTimeout(timer);
+    }
+
+    priorityWakeupTimersRef.current = [];
+    priorityWakeupStartedAtRef.current = 0;
+  }, []);
+
+  const runPriorityWakeupSequence = useCallback(() => {
+    if (!canOperate) return;
+    if (assignedOrderRef.current) return;
+
+    clearPriorityWakeups();
+
+    priorityWakeupStartedAtRef.current = Date.now();
+
+    const delaysMs = [
+      0,
+      1500,
+      3000,
+      5000,
+      8000,
+      12000,
+      17000,
+      23000,
+      30000,
+      40000,
+      50000,
+      60000,
+      75000,
+      90000,
+      120000,
+      150000,
+      180000,
+      240000,
+      300000,
+    ];
+
+    priorityWakeupTimersRef.current = delaysMs.map((delayMs) =>
+      window.setTimeout(async () => {
+        if (!canOperate) return;
+        if (assignedOrderRef.current) return;
+
+        await loadAvailableOrders();
+      }, delayMs)
+    );
+  }, [canOperate, clearPriorityWakeups, loadAvailableOrders]);
+
+  useEffect(() => {
+    return () => {
+      clearPriorityWakeups();
+    };
+  }, [clearPriorityWakeups]);
+
   useEffect(() => {
     if (assignedOrder) return;
     if (!canOperate) return;
@@ -1247,8 +1304,19 @@ assignedStepRef.current = safeStep;
       const url = `${API_BASE}/events/stream?driversAvailable=1`;
       es = new EventSource(url, { withCredentials: true });
 
-      es.onmessage = () => {
-        void loadAvailableOrders();
+      es.onmessage = (event) => {
+        try {
+          const raw = String(event?.data ?? "").trim();
+
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            const type = String(parsed?.type ?? "").trim();
+
+            if (type === "ping") return;
+          }
+        } catch {}
+
+        runPriorityWakeupSequence();
       };
 
       es.onerror = () => {};
@@ -1260,7 +1328,7 @@ assignedStepRef.current = safeStep;
         es?.close();
       } catch {}
     };
-  }, [assignedOrder, loadAvailableOrders, canOperate]);
+  }, [assignedOrder, loadAvailableOrders, runPriorityWakeupSequence, canOperate]);
 
   useEffect(() => {
     if (!canOperate) return;

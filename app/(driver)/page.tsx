@@ -814,6 +814,7 @@ const [checkingPrivacy, setCheckingPrivacy] = useState(true);
 
   const [dots, setDots] = useState<"" | "." | ".." | "...">("");
   const [lastUpdatedAt, setLastUpdatedAt] = useState<number>(Date.now());
+  const [nowTick, setNowTick] = useState<number>(Date.now());
   const [refreshingUi, setRefreshingUi] = useState(false);
   const [checkingActiveOrder, setCheckingActiveOrder] = useState(true);
 
@@ -945,15 +946,15 @@ useEffect(() => {
   }, []);
 
   const secondsSinceUpdate = useMemo(() => {
-    const s = Math.max(0, Math.floor((Date.now() - lastUpdatedAt) / 1000));
+    const s = Math.max(0, Math.floor((nowTick - lastUpdatedAt) / 1000));
     return s;
-  }, [lastUpdatedAt]);
+  }, [lastUpdatedAt, nowTick]);
 
   useEffect(() => {
-    const t = setInterval(() => {
-      setLastUpdatedAt((v) => v);
+    const t = window.setInterval(() => {
+      setNowTick(Date.now());
     }, 1000);
-    return () => clearInterval(t);
+    return () => window.clearInterval(t);
   }, []);
 
   const gpsIntervalRef = useRef<any>(null);
@@ -1329,6 +1330,18 @@ assignedStepRef.current = safeStep;
       } catch {}
     };
   }, [assignedOrder, loadAvailableOrders, runPriorityWakeupSequence, canOperate]);
+
+  useEffect(() => {
+    if (assignedOrder) return;
+    if (!canOperate) return;
+
+    const t = window.setInterval(() => {
+      if (assignedOrderRef.current) return;
+      void loadAvailableOrders();
+    }, 7000);
+
+    return () => window.clearInterval(t);
+  }, [assignedOrder, canOperate, loadAvailableOrders]);
 
   useEffect(() => {
     if (!canOperate) return;

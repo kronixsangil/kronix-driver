@@ -1248,7 +1248,7 @@ assignedStepRef.current = safeStep;
       es = new EventSource(url, { withCredentials: true });
 
       es.onmessage = () => {
-        loadAvailableOrders();
+        void loadAvailableOrders();
       };
 
       es.onerror = () => {};
@@ -1328,6 +1328,15 @@ assignedStepRef.current = safeStep;
         const parsed = JSON.parse(raw) as any;
         const type = String(parsed?.type ?? "").trim();
 
+        if (type === "ping") return;
+
+        if (type === "driver.available.changed") {
+          if (!assignedOrderRef.current) {
+            await loadAvailableOrders();
+          }
+          return;
+        }
+
         if (type !== "driver.order.ready_for_pickup") return;
 
         const orderId = String(parsed?.orderId ?? "").trim();
@@ -1375,7 +1384,7 @@ showNotify("Pedido listo para recoger", `${storeName} ya tiene el pedido listo.`
         es.close();
       } catch {}
     };
-  }, [driverIdForEvents]);
+  }, [driverIdForEvents, loadAvailableOrders]);
 
 useEffect(() => {
   let mounted = true;

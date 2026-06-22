@@ -8,20 +8,16 @@ import { getDriverMe } from "../../../lib/driverAuth";
 
 import ProfileHeader from "./components/ProfileHeader";
 import DriverIdentityCard from "./components/DriverIdentityCard";
-import MetricsCard from "./components/cards/MetricsCard";
 
 import {
   loadDriverHistoryWithSnapshot,
   type DriverHistoryItem,
 } from "../lib/driverHistory";
 import { useDriverCity } from "../components/DriverCityContext";
-
-function levelFromDeliveries(count: number) {
-  if (count >= 100) return { key: "PLATINO", next: null, min: 100 };
-  if (count >= 50) return { key: "ORO", next: 100, min: 50 };
-  if (count >= 20) return { key: "PLATA", next: 50, min: 20 };
-  return { key: "BRONCE", next: 20, min: 0 };
-}
+import {
+  getDriverRewardsMe,
+  type DriverRewardsMeResponse,
+} from "../lib/driverRewardsApi";
 
 type MeState = {
   fullName: string;
@@ -40,6 +36,91 @@ type ProfileImageNavCardProps = {
   imageAlt: string;
   imageClassName?: string;
 };
+
+type RewardView = {
+  tierCode: string;
+  tierName: string;
+  badgeLabel: string;
+  currentPoints: number;
+  currentMonthPoints: number;
+  currentMonthDeliveries: number;
+  reliabilityPercent: number;
+  averageRating: number;
+  isPioneer: boolean;
+  progressPct: number;
+};
+
+const DEFAULT_REWARD_VIEW: RewardView = {
+  tierCode: "BRONCE",
+  tierName: "Bronce",
+  badgeLabel: "BRONCE",
+  currentPoints: 0,
+  currentMonthPoints: 0,
+  currentMonthDeliveries: 0,
+  reliabilityPercent: 100,
+  averageRating: 5,
+  isPioneer: false,
+  progressPct: 0,
+};
+
+function safeNumber(value: unknown, fallback = 0) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function normalizeTierCode(value?: string | null) {
+  return String(value ?? "BRONCE").trim().toUpperCase() || "BRONCE";
+}
+
+function prettyTierName(value?: string | null, code?: string | null) {
+  const clean = String(value ?? "").trim();
+  if (clean) return clean;
+
+  const tierCode = normalizeTierCode(code);
+  if (tierCode === "PIONERO") return "Pionero";
+  if (tierCode === "ELITE") return "Elite";
+  if (tierCode === "ORO") return "Oro";
+  if (tierCode === "PLATA") return "Plata";
+  return "Bronce";
+}
+
+function buildRewardView(rewards: DriverRewardsMeResponse | null): RewardView {
+  if (!rewards) return DEFAULT_REWARD_VIEW;
+
+  const rawCode = normalizeTierCode(rewards?.tier?.code);
+  const isPioneer = Boolean(rewards?.isPioneer) || rawCode === "PIONERO";
+  const tierCode = isPioneer ? "PIONERO" : rawCode;
+  const tierName = isPioneer
+    ? "Pionero"
+    : prettyTierName(rewards?.tier?.name, rewards?.tier?.code);
+
+  const currentPoints = safeNumber(rewards?.currentPoints, 0);
+  const currentMonthPoints = safeNumber(rewards?.currentMonthPoints, 0);
+  const currentMonthDeliveries = safeNumber(rewards?.currentMonthDeliveries, 0);
+  const reliabilityPercent = Math.max(
+    0,
+    Math.min(100, safeNumber(rewards?.reliabilityPercent, 100))
+  );
+  const averageRating = safeNumber(rewards?.averageRating, 5);
+
+  const progressPct = Math.max(
+    0,
+    Math.min(100, Math.round((currentMonthPoints / 100) * 100))
+  );
+
+  return {
+    tierCode,
+    tierName,
+    badgeLabel: tierCode,
+    currentPoints,
+    currentMonthPoints,
+    currentMonthDeliveries,
+    reliabilityPercent,
+    averageRating,
+    isPioneer,
+    progressPct,
+  };
+}
 
 function ProfileImageNavCard({
   title,
@@ -85,6 +166,137 @@ function ProfileImageNavCard({
   );
 }
 
+function KronixRewardsCard({
+  rewards,
+  loading,
+}: {
+  rewards: RewardView;
+  loading: boolean;
+}) {
+  return (
+    <section className="mx-0 overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm">
+      <div className="bg-gradient-to-br from-slate-950 via-blue-950 to-emerald-700 px-5 py-5 text-white">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <div className="text-[11px] font-black uppercase tracking-[0.18em] text-emerald-100">
+              KroniX Rewards
+            </div>
+            <h2 className="mt-2 text-2xl font-black leading-7">
+              {loading ? "Actualizando nivel…" : rewards.tierName}
+            </h2>
+            <p className="mt-1 text-[13px] font-semibold text-white/80">
+              Sistema actual de prioridad, puntos y desempeño mensual.
+            </p>
+          </div>
+
+          <div className="shrink-0 rounded-full border border-white/20 bg-white/15 px-4 py-2 text-xs font-black shadow-sm backdrop-blur">
+            {rewards.badgeLabel}
+          </div>
+        </div>
+
+        <div className="mt-5 grid grid-cols-3 gap-2">
+          <RewardMiniStat label="Puntos" value={rewards.currentPoints} />
+          <RewardMiniStat label="Mes" value={rewards.currentMonthPoints} />
+          <RewardMiniStat label="Entregas" value={rewards.currentMonthDeliveries} />
+        </div>
+      </div>
+
+      <div className="p-5">
+        <div className="rounded-3xl border border-slate-100 bg-slate-50 p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <div className="text-sm font-black text-slate-950">
+                Prioridad operativa
+              </div>
+              <div className="mt-1 text-xs font-semibold text-slate-500">
+                {rewards.isPioneer
+                  ? "Pionero activo: prioridad máxima cuando CTCC habilite prioridad."
+                  : `Nivel actual: ${rewards.tierName}.`}
+              </div>
+            </div>
+            <span className="rounded-full bg-emerald-100 px-3 py-1 text-[11px] font-black text-emerald-700">
+              {rewards.isPioneer ? "PIONERO" : rewards.tierCode}
+            </span>
+          </div>
+
+          <div className="mt-4">
+            <div className="flex items-center justify-between text-[11px] font-bold text-slate-500">
+              <span>Progreso mensual por puntos</span>
+              <span>{rewards.progressPct}%</span>
+            </div>
+            <div className="mt-2 h-2 overflow-hidden rounded-full bg-white">
+              <div
+                className="h-full rounded-full bg-emerald-500 transition-all"
+                style={{ width: `${rewards.progressPct}%` }}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-3 grid grid-cols-2 gap-3">
+          <RewardDetail label="Confiabilidad" value={`${Math.round(rewards.reliabilityPercent)}%`} />
+          <RewardDetail label="Calificación" value={rewards.averageRating.toFixed(1)} />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function RewardMiniStat({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-2xl bg-white/12 px-3 py-3 text-center ring-1 ring-white/15">
+      <div className="text-lg font-black leading-5">{value}</div>
+      <div className="mt-1 text-[10px] font-bold uppercase tracking-wide text-white/70">
+        {label}
+      </div>
+    </div>
+  );
+}
+
+function RewardDetail({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="text-[11px] font-bold text-slate-500">{label}</div>
+      <div className="mt-1 text-xl font-black text-slate-950">{value}</div>
+    </div>
+  );
+}
+
+function PerformanceSummaryCard({
+  deliveries,
+  cancellations,
+}: {
+  deliveries: number;
+  cancellations: number;
+}) {
+  return (
+    <section className="mx-0 rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h2 className="text-xl font-black text-slate-950">Mis métricas</h2>
+          <p className="mt-1 text-[13px] font-medium text-slate-500">
+            Resumen operativo sin calcular niveles antiguos.
+          </p>
+        </div>
+        <div className="rounded-full bg-slate-50 px-4 py-2 text-xs font-black text-slate-700 ring-1 ring-slate-200">
+          Hoy
+        </div>
+      </div>
+
+      <div className="mt-4 grid grid-cols-2 gap-3">
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+          <div className="text-[11px] font-bold text-slate-500">Entregas históricas</div>
+          <div className="mt-2 text-2xl font-black text-slate-950">{deliveries}</div>
+        </div>
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+          <div className="text-[11px] font-bold text-slate-500">Cancelaciones</div>
+          <div className="mt-2 text-2xl font-black text-slate-950">{cancellations}</div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default function DriverProfilePage() {
   const {
     cityName,
@@ -103,13 +315,10 @@ export default function DriverProfilePage() {
   });
 
   const [loadingMe, setLoadingMe] = useState(false);
-
   const [history, setHistory] = useState<DriverHistoryItem[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
-
-  const [open, setOpen] = useState<string | null>(null);
-  const toggle = (key: string) =>
-    setOpen((prev) => (prev === key ? null : key));
+  const [rewards, setRewards] = useState<DriverRewardsMeResponse | null>(null);
+  const [loadingRewards, setLoadingRewards] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -164,34 +373,38 @@ export default function DriverProfilePage() {
     };
   }, []);
 
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadRewards() {
+      setLoadingRewards(true);
+      try {
+        const data = await getDriverRewardsMe();
+        if (mounted) setRewards(data);
+      } catch {
+        if (mounted) setRewards(null);
+      } finally {
+        if (mounted) setLoadingRewards(false);
+      }
+    }
+
+    loadRewards();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   const metrics = useMemo(() => {
     const delivered = history.filter((h) => h.status === "DELIVERED");
     const cancelled = history.filter((h) => h.status === "CANCELLED");
 
     return {
       deliveries: delivered.length,
-      pickups: delivered.length,
       cancellations: cancelled.length,
-      avgTime: "—",
-      rating: "—",
     };
   }, [history]);
 
-  const levelInfo = useMemo(() => {
-    const lvl = levelFromDeliveries(metrics.deliveries);
-    const progress =
-      lvl.next === null
-        ? 1
-        : Math.min(1, (metrics.deliveries - lvl.min) / (lvl.next - lvl.min));
-
-    return {
-      ...lvl,
-      progressPct: Math.round(progress * 100),
-      remaining:
-        lvl.next === null ? 0 : Math.max(0, lvl.next - metrics.deliveries),
-      hasNext: lvl.next !== null,
-    };
-  }, [metrics.deliveries]);
+  const rewardView = useMemo(() => buildRewardView(rewards), [rewards]);
 
   const cityText = cityLoading
     ? "Cargando ciudad..."
@@ -205,9 +418,9 @@ export default function DriverProfilePage() {
         <DriverIdentityCard
           fullName={me.fullName}
           email={me.email}
-          loading={loadingMe}
-          levelKey={levelInfo.key}
-          progressPct={levelInfo.progressPct}
+          loading={loadingMe || loadingRewards}
+          levelKey={rewardView.badgeLabel}
+          progressPct={rewardView.progressPct}
           cityName={cityName ?? null}
           cityDepartment={cityDepartment ?? null}
           cityLabel={cityLabel ?? null}
@@ -215,19 +428,12 @@ export default function DriverProfilePage() {
           profileImageUrl={me.profileImageUrl ?? null}
         />
 
-        <MetricsCard
-  isOpen={open === "metricas"}
-  onToggle={() => toggle("metricas")}
-  deliveries={metrics.deliveries}
-  cancellations={metrics.cancellations}
-  avgTime={metrics.avgTime}
-  rating={metrics.rating}
-  levelKey={levelInfo.key}
-  progressPct={levelInfo.progressPct}
-  remaining={levelInfo.remaining}
-  hasNext={levelInfo.next !== null}
-  pickups={metrics.pickups}
-/>
+        <KronixRewardsCard rewards={rewardView} loading={loadingRewards} />
+
+        <PerformanceSummaryCard
+          deliveries={metrics.deliveries}
+          cancellations={metrics.cancellations}
+        />
 
         {loadingHistory ? (
           <div className="mx-0 rounded-2xl border border-gray-200 bg-white p-3 text-xs font-semibold text-gray-600 shadow-sm">
@@ -235,7 +441,7 @@ export default function DriverProfilePage() {
           </div>
         ) : null}
 
-          <div className="space-y-2">
+        <div className="space-y-2">
           <ProfileImageNavCard
             title="Tu información"
             desc="Datos personales básicos"
@@ -346,7 +552,7 @@ export default function DriverProfilePage() {
         </div>
 
         <div className="text-center text-[11px] text-gray-500">
-          Consejo: tu perfil ya está alineado con la ciudad operativa real. ✅
+          Consejo: tu nivel ahora viene desde KroniX Rewards. ✅
         </div>
 
         <span className="hidden">

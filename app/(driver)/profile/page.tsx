@@ -244,36 +244,6 @@ function DriverPhotoBubble({
   );
 }
 
-function PioneerFloatingBadge({ show }: { show: boolean }) {
-  if (!show) return null;
-
-  return (
-    <div
-      className="
-        pointer-events-none
-        absolute
-        right-9
-        top-[112px]
-        z-20
-        h-[58px]
-        w-[58px]
-        scale-[1.18]
-        translate-x-[0px]
-        translate-y-[0px]
-      "
-    >
-      <Image
-        src="/branding/Insignias/Pionero.png"
-        alt="Insignia Pionero"
-        fill
-        priority
-        sizes="58px"
-        className="object-contain drop-shadow-xl"
-      />
-    </div>
-  );
-}
-
 function DriverIdentityWithBadge({
   me,
   rewardView,
@@ -570,10 +540,8 @@ export default function DriverProfilePage() {
 
   return (
     <div className="w-full bg-slate-50 p-0">
-      <div className="relative mx-auto w-full max-w-md space-y-3 px-0 pb-24 pt-0">
+      <div className="mx-auto w-full max-w-md space-y-3 px-0 pb-24 pt-0">
         <ProfileHeader cityLabel={cityText} loading={cityLoading} />
-
-        <PioneerFloatingBadge show={rewardView.isPioneer} />
 
         <DriverIdentityWithBadge
           me={me}
@@ -713,3 +681,4 @@ export default function DriverProfilePage() {
     </div>
   );
 }
+

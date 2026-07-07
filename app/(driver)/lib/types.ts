@@ -24,6 +24,9 @@ export type DriverOrder = {
 
   stores?: DriverStore[];
   storeName?: string;
+  serviceType?: "STORE" | "DELIVERY" | "PACKAGE" | "TAXI" | "MOTORCARGO" | string | null;
+  requiredWorkerType?: "MOTORCYCLE" | "TAXI" | "MOTORCARGO" | string | null;
+  workerCommissionCOP?: number | null;
   courierServiceType?: "PICKUP_AND_DELIVERY" | "SEND_PACKAGE" | "ERRAND" | string | null;
 
   distanceKm: number;
@@ -36,6 +39,7 @@ export type DriverOrder = {
   dropoffLocation: GeoPoint;
 
   routeAddresses?: string[];
+  
   courierStops?: {
   sequence: number;
   address: string;

@@ -5,9 +5,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 /**
- * BottomNav (clonado del Buyer)
+ * BottomNav Worker
  * Tabs: Inicio / Historial / Ganancias / Perfil
- * Sin badge de carrito (no aplica).
  */
 
 function IconHome({ active }: { active: boolean }) {

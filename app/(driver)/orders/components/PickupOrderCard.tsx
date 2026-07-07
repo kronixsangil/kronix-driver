@@ -16,55 +16,91 @@ function normalizeName(value?: string | null) {
   return String(value ?? "").trim().toLowerCase();
 }
 
+function getOrderServiceType(order: DriverOrder) {
+  const direct = String(order.serviceType ?? "").trim().toUpperCase();
+  if (direct) return direct;
+
+  const legacy = String(order.courierServiceType ?? "").trim().toUpperCase();
+  if (legacy === "PICKUP_AND_DELIVERY") return "DELIVERY";
+  if (legacy === "SEND_PACKAGE") return "PACKAGE";
+  if (legacy === "ERRAND") return "ERRAND";
+
+  return legacy;
+}
+
 function getCourierType(order: DriverOrder) {
   return String(order.courierServiceType ?? "").trim().toUpperCase();
 }
 
-function getServiceMeta(order: DriverOrder) {
-  const serviceType = getCourierType(order);
+function getServiceAssetsSlug(serviceType: string) {
+  if (serviceType === "DELIVERY") return "delivery";
+  if (serviceType === "PACKAGE") return "package";
+  if (serviceType === "TAXI") return "taxi";
+  if (serviceType === "MOTORCARGO") return "motocarga";
+  return "delivery";
+}
 
-  if (serviceType === "SEND_PACKAGE") {
+function getServiceMeta(order: DriverOrder) {
+  const serviceType = getOrderServiceType(order);
+  const slug = getServiceAssetsSlug(serviceType);
+
+  if (serviceType === "PACKAGE") {
     return {
       label: "KroniX Envíos",
-      imageSrc: "/branding/kronix/Enviar-Paquete1.png",
-      imageAlt: "Paquete",
+      imageSrc: `/services/${slug}/cardizq.png`,
+      imageAlt: "KroniX Envíos",
       tone: "bg-cyan-50 text-cyan-700 ring-1 ring-cyan-200",
       heroTone: "from-cyan-50 via-white to-sky-50",
       headerTitle: "Confirma la recogida del paquete",
       pickedUpText: "Recogí el paquete",
       modalTitle: "Confirmación del paquete",
       modalDescription: "Verifica que recibiste correctamente el paquete antes de continuar al destino.",
-      footerText: "Al confirmar, el servicio pasará a “En ruta”.",
+      footerText: "Al confirmar, el servicio pasará a En ruta.",
     };
   }
 
-  if (serviceType === "ERRAND") {
+  if (serviceType === "TAXI") {
     return {
-      label: "Domicilios y Diligencias",
-      imageSrc: "/branding/kronix/check-list.png",
-      imageAlt: "Diligencia",
-      tone: "bg-violet-50 text-violet-700 ring-1 ring-violet-200",
-      heroTone: "from-violet-50 via-white to-emerald-50",
-      headerTitle: "Confirma el inicio de la diligencia",
-      pickedUpText: "Continuar al destino",
-      modalTitle: "Confirmación de la diligencia",
-      modalDescription: "Asegúrate de que ya tienes todo lo necesario para continuar con la gestión.",
-      footerText: "Al confirmar, la diligencia pasará a “En ruta”.",
+      label: "Taxi",
+      imageSrc: `/services/${slug}/cardizq.png`,
+      imageAlt: "Taxi",
+      tone: "bg-yellow-50 text-yellow-800 ring-1 ring-yellow-200",
+      heroTone: "from-yellow-50 via-white to-sky-50",
+      headerTitle: "Confirma que el pasajero abordó",
+      pickedUpText: "Pasajero abordó",
+      modalTitle: "Confirmación de pasajero",
+      modalDescription: "Confirma que el pasajero ya está contigo antes de iniciar el recorrido.",
+      footerText: "Al confirmar, el servicio pasará a En ruta.",
     };
   }
 
-  if (serviceType === "PICKUP_AND_DELIVERY") {
+  if (serviceType === "MOTORCARGO") {
+    return {
+      label: "Motocarga",
+      imageSrc: `/services/${slug}/cardizq.png`,
+      imageAlt: "Motocarga",
+      tone: "bg-orange-50 text-orange-800 ring-1 ring-orange-200",
+      heroTone: "from-orange-50 via-white to-emerald-50",
+      headerTitle: "Confirma la recogida de la carga",
+      pickedUpText: "Recogí la carga",
+      modalTitle: "Confirmación de carga",
+      modalDescription: "Verifica que recibiste correctamente la carga antes de continuar al destino.",
+      footerText: "Al confirmar, el servicio pasará a En ruta.",
+    };
+  }
+
+  if (serviceType === "DELIVERY") {
     return {
       label: "Domicilio Express",
-      imageSrc: "/branding/kronix/card-moto.png",
-      imageAlt: "Mensajería",
+      imageSrc: `/services/${slug}/cardizq.png`,
+      imageAlt: "Domicilio Express",
       tone: "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200",
       heroTone: "from-emerald-50 via-white to-cyan-50",
       headerTitle: "Confirma la recogida del encargo",
       pickedUpText: "Recogí el encargo",
       modalTitle: "Confirmación del encargo",
       modalDescription: "Marca las casillas para confirmar que ya recibiste correctamente el encargo.",
-      footerText: "Al confirmar, el servicio pasará a “En ruta”.",
+      footerText: "Al confirmar, el servicio pasará a En ruta.",
     };
   }
 
@@ -78,14 +114,15 @@ function getServiceMeta(order: DriverOrder) {
     pickedUpText: "Recogí el pedido",
     modalTitle: "Confirmación del pedido",
     modalDescription: "Marca las casillas para confirmar que ya recogiste correctamente el pedido.",
-    footerText: "Al confirmar, el pedido pasará a “En ruta”.",
+    footerText: "Al confirmar, el pedido pasará a En ruta.",
   };
 }
 
 function formatPackageLabel(order: DriverOrder) {
-  const type = getCourierType(order);
-  if (type === "ERRAND") return "Descripción del servicio";
-  return "Descripción del paquete";
+  const type = getOrderServiceType(order);
+  if (type === "TAXI") return "Datos del servicio";
+  if (type === "MOTORCARGO") return "Descripción de la carga";
+  return "Descripción del servicio";
 }
 
 export default function PickupOrderCard({
@@ -95,7 +132,7 @@ export default function PickupOrderCard({
 }: Props) {
   const pickups = useMemo(() => order.pickupLocations ?? [], [order.pickupLocations]);
   const hasMultiple = pickups.length > 1;
-  const isCourierFlow = !!getCourierType(order);
+  const isCourierFlow = !!getOrderServiceType(order) && getOrderServiceType(order) !== "STORE";
 
   const [selectedPickupIndex, setSelectedPickupIndex] = useState<number | null>(
     hasMultiple ? null : pickups.length ? 0 : null
@@ -117,7 +154,7 @@ export default function PickupOrderCard({
 
   const checks = useMemo(() => {
     const out: { id: string; label: string; required: boolean }[] = [];
-    const serviceType = getCourierType(order);
+    const serviceType = getOrderServiceType(order);
 
     if (!serviceType) {
       if (pickups.length > 1) {
@@ -132,7 +169,7 @@ export default function PickupOrderCard({
         label: "Verifiqué que el pedido esté completo y en buen estado.",
         required: true,
       });
-    } else if (serviceType === "SEND_PACKAGE") {
+    } else if (serviceType === "PACKAGE") {
       out.push({
         id: "package_ok",
         label: "Verifiqué que el paquete corresponde al servicio solicitado.",
@@ -143,10 +180,16 @@ export default function PickupOrderCard({
         label: "El paquete fue recibido en condiciones adecuadas.",
         required: true,
       });
-    } else if (serviceType === "ERRAND") {
+    } else if (serviceType === "TAXI") {
       out.push({
-        id: "errand_ok",
-        label: "Ya tengo en mi poder lo necesario para completar la diligencia.",
+        id: "passenger_ok",
+        label: "El pasajero ya abordó o confirmó que iniciamos el servicio.",
+        required: true,
+      });
+    } else if (serviceType === "MOTORCARGO") {
+      out.push({
+        id: "cargo_ok",
+        label: "Ya recibí la carga y está en condiciones adecuadas para transportarla.",
         required: true,
       });
     } else {
@@ -273,12 +316,12 @@ export default function PickupOrderCard({
             {isCourierFlow ? (
   <div className="mt-3 rounded-[18px] border border-slate-200 bg-slate-50 px-4 py-3">
     <div className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-slate-500">
-      {getCourierType(order) === "SEND_PACKAGE"
+      {getOrderServiceType(order) === "PACKAGE"
         ? "Indicaciones KroniX Envíos"
         : formatPackageLabel(order)}
     </div>
 
-    {getCourierType(order) === "SEND_PACKAGE" ? (
+    {getOrderServiceType(order) === "PACKAGE" ? (
       <div className="mt-2 text-[14px] leading-5 text-slate-700">
         <p className="font-semibold">
           Recibe el paquete, confirma con el cliente los datos del envío y continúa a
@@ -311,7 +354,7 @@ export default function PickupOrderCard({
   </div>
 ) : null}
 
-{getCourierType(order) !== "SEND_PACKAGE" ? (
+{getOrderServiceType(order) !== "PACKAGE" ? (
   <div className="mt-3 rounded-[18px] border border-slate-200 bg-slate-50 px-4 py-3">
     <div className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-slate-500">
       Indicaciones del cliente

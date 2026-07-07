@@ -1,5 +1,4 @@
 //app/(driver)/components/DriverTopBar.tsx
-//app/(driver)/components/DriverTopBar.tsx
 "use client";
 
 import Link from "next/link";
@@ -35,7 +34,7 @@ function stepFromApiOrder(input: {
   const flow = String(input?.flowStatus ?? "").toUpperCase();
 
   if (status === "DELIVERED" || flow === "DELIVERED") return "ENTREGADO";
-  if (status === "EN_ROUTE" || flow === "EN_RUTA") return "EN_RUTA";
+  if (status === "EN_ROUTE" || flow === "EN_ROUTE" || flow === "EN_RUTA") return "EN_RUTA";
   if (status === "ASSIGNED") return "ASIGNADO";
 
   return null;
@@ -122,7 +121,7 @@ function OfficialDriverAvatar({
       {finalSrc ? (
         <img
           src={finalSrc}
-          alt="Foto oficial del conductor"
+          alt="Foto oficial del worker"
           className="block h-full w-full object-cover"
           onError={() => setFailed(true)}
         />
@@ -406,7 +405,7 @@ export default function DriverTopBar() {
 
   const isLoggedIn = canShowSessionUI;
   const menuCity = cityLabel || cityName || "Tu ciudad";
-  const userInitials = getInitials(driverName || "Conductor");
+  const userInitials = getInitials(driverName || "Worker");
   const driverAvatarSrc = buildOfficialDriverPhotoSrc(driverProfileImageUrl, driverName);
 
   const openBlockedModal = () => {
@@ -488,7 +487,7 @@ export default function DriverTopBar() {
     const orderId = String(a?.order?.orderId ?? "").trim();
 
     const text = encodeURIComponent(
-      `Hola Mesa de Ayuda KroniX. Soy conductor y necesito apoyo.\n` +
+      `Hola Mesa de Ayuda KroniX. Soy Worker KRONIX y necesito apoyo.\n` +
         `Orden: ${orderId || "N/A"}\n` +
         `Estado app: ${a?.step || "N/A"}\n` +
         `Motivo: No puedo cerrar sesión porque tengo una orden en curso.`
@@ -582,7 +581,7 @@ export default function DriverTopBar() {
     ) : (
       <Image
         src="/avatar/default.png"
-        alt="Conductor"
+        alt="Worker"
         fill
         className="object-cover"
         sizes="42px"
@@ -638,7 +637,7 @@ export default function DriverTopBar() {
 
                     <div className="min-w-0 flex-1">
                       <div className="truncate text-lg font-extrabold">
-                        {isLoggedIn ? (driverName || "Conductor") : "KroniX Driver"}
+                        {isLoggedIn ? (driverName || "Worker") : "KroniX Worker"}
                       </div>
                       <div className="truncate text-sm text-white/90">
                         {isLoggedIn ? (driverEmail || menuCity) : menuCity}
@@ -695,8 +694,8 @@ export default function DriverTopBar() {
 
                   <MenuLinkRow
                     href="/profile/cars"
-                    title="Vehículos"
-                    subtitle="Vehículo activo y documentación"
+                    title="Servicios y vehículos"
+                    subtitle="Tipos autorizados y documentos"
                     icon="🚘"
                     active={isPathActive(pathname, "/profile/cars")}
                     onNavigate={() => setMenuOpen(false)}
@@ -743,7 +742,7 @@ export default function DriverTopBar() {
                   {isLoggedIn ? (
                     <MenuActionRow
                       title={loggingOut ? "Cerrando sesión..." : "Cerrar sesión"}
-                      subtitle="Salir de tu cuenta de conductor"
+                      subtitle="Salir de tu cuenta Worker"
                       icon="🚪"
                       tone="danger"
                       onClick={async () => {
@@ -754,7 +753,7 @@ export default function DriverTopBar() {
                   ) : (
                     <MenuActionRow
                       title="Iniciar sesión"
-                      subtitle="Accede con tu cuenta de conductor"
+                      subtitle="Accede con tu cuenta Worker"
                       icon="🔑"
                       tone="primary"
                       onClick={() => {
@@ -859,7 +858,7 @@ export default function DriverTopBar() {
                 </div>
 
                 <p className="mt-4 text-[11px] text-gray-500">
-                  * Regla: el conductor puede cancelar/liberar solo antes de iniciar. Si ya inició, debe pasar por Mesa de ayuda.
+                  * Regla: el Worker puede cancelar/liberar solo antes de iniciar. Si ya inició, debe pasar por Mesa de ayuda.
                 </p>
               </div>
             </div>

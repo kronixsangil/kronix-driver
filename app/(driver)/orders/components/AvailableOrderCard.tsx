@@ -22,6 +22,9 @@ type AvailableOrder = {
   status?: string;
   flowStatus?: string;
   orderType?: string | null;
+  serviceType?: "STORE" | "DELIVERY" | "PACKAGE" | "TAXI" | "MOTORCARGO" | string | null;
+  requiredWorkerType?: "MOTORCYCLE" | "TAXI" | "MOTORCARGO" | string | null;
+  workerCommissionCOP?: number | null;
   courierServiceType?: "PICKUP_AND_DELIVERY" | "SEND_PACKAGE" | "ERRAND" | string | null;
 
   [k: string]: unknown;
@@ -35,10 +38,32 @@ function formatCOP(value: number) {
   });
 }
 
+function getOrderServiceType(order: AvailableOrder) {
+  const direct = String(order.serviceType ?? "").trim().toUpperCase();
+  if (direct) return direct;
+
+  const legacy = String(order.courierServiceType ?? "").trim().toUpperCase();
+  if (legacy === "PICKUP_AND_DELIVERY") return "DELIVERY";
+  if (legacy === "SEND_PACKAGE") return "PACKAGE";
+  if (legacy === "ERRAND") return "ERRAND";
+
+  const orderType = String(order.orderType ?? "").trim().toUpperCase();
+  if (orderType === "STORE") return "STORE";
+
+  return legacy || orderType;
+}
+
+function getServiceAssetsSlug(serviceType: string) {
+  if (serviceType === "DELIVERY") return "delivery";
+  if (serviceType === "PACKAGE") return "package";
+  if (serviceType === "TAXI") return "taxi";
+  if (serviceType === "MOTORCARGO") return "motocarga";
+  return "delivery";
+}
+
 function buildStoreTitle(order: AvailableOrder) {
   const stores = Array.isArray(order.stores) ? order.stores : [];
-  const orderType = String(order.orderType ?? "").trim().toUpperCase();
-  const serviceType = String(order.courierServiceType ?? "").trim().toUpperCase();
+  const serviceType = getOrderServiceType(order);
 
   if (stores.length === 1) return stores[0].name || "Pedido";
   if (stores.length > 1) {
@@ -46,12 +71,13 @@ function buildStoreTitle(order: AvailableOrder) {
     return `${first} + ${stores.length - 1}`;
   }
 
-  if (orderType === "STORE") return "Tienda en linea";
-  if (serviceType === "SEND_PACKAGE") return "KroniX Envíos";
-  if (serviceType === "ERRAND") return "Domicilios y Diligencias";
-  if (serviceType === "PICKUP_AND_DELIVERY") return "Domicilio Express";
+  if (serviceType === "STORE") return "Tienda en línea";
+  if (serviceType === "PACKAGE") return "KroniX Envíos";
+  if (serviceType === "DELIVERY") return "Domicilio Express";
+  if (serviceType === "TAXI") return "Taxi";
+  if (serviceType === "MOTORCARGO") return "Motocarga";
 
-  return "Pedido";
+  return "Servicio KroniX";
 }
 
 function buildPickupsLabel(stores: { name: string }[]) {
@@ -86,10 +112,10 @@ function getBadge(order: AvailableOrder) {
 }
 
 function getServiceMeta(order: AvailableOrder) {
-  const orderType = String(order.orderType ?? "").trim().toUpperCase();
-  const serviceType = String(order.courierServiceType ?? "").trim().toUpperCase();
+  const serviceType = getOrderServiceType(order);
+  const slug = getServiceAssetsSlug(serviceType);
 
-  if (orderType === "STORE") {
+  if (serviceType === "STORE") {
     return {
       label: "Tienda en línea",
       tone: "bg-blue-50 text-blue-700 ring-1 ring-blue-200",
@@ -101,50 +127,51 @@ function getServiceMeta(order: AvailableOrder) {
     };
   }
 
-  if (serviceType === "SEND_PACKAGE") {
+  const common = {
+    imageSrc: `/services/${slug}/cardder.png`,
+    imageAlt: "Servicio KroniX",
+    imageWrap: "h-[74px] w-[104px]",
+    imageClassName: "object-contain scale-[1.25] translate-x-[4px] translate-y-[3px]",
+  };
+
+  if (serviceType === "PACKAGE") {
     return {
+      ...common,
       label: "KroniX Envíos",
+      imageAlt: "KroniX Envíos",
       tone: "bg-cyan-50 text-cyan-700 ring-1 ring-cyan-200",
       panelTone: "from-cyan-50/60 via-white to-sky-50/60",
-      imageSrc: "/branding/kronix/Enviar-Paquete1.png",
-      imageAlt: "Paquete",
-      imageWrap: "h-[74px] w-[88px]",
-      imageClassName: "object-contain scale-[0.96] translate-x-[1px] translate-y-[4px]",
     };
   }
 
-  if (serviceType === "ERRAND") {
+  if (serviceType === "TAXI") {
     return {
-      label: "Domis y Diligencias",
-      tone: "bg-violet-50 text-violet-700 ring-1 ring-violet-200",
-      panelTone: "from-violet-50/60 via-white to-emerald-50/60",
-      imageSrc: "/branding/kronix/check-list.png",
-      imageAlt: "Diligencia",
-      imageWrap: "h-[74px] w-[82px]",
-      imageClassName: "object-contain scale-[0.95] translate-x-0 translate-y-[2px]",
+      ...common,
+      label: "Taxi",
+      imageAlt: "Taxi",
+      tone: "bg-yellow-50 text-yellow-800 ring-1 ring-yellow-200",
+      panelTone: "from-yellow-50/70 via-white to-sky-50/60",
+      imageClassName: "object-contain scale-[1.18] translate-x-[2px] translate-y-[4px]",
     };
   }
 
-  if (serviceType === "PICKUP_AND_DELIVERY") {
+  if (serviceType === "MOTORCARGO") {
     return {
-      label: "Domi Express",
-      tone: "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200",
-      panelTone: "from-emerald-50/60 via-white to-cyan-50/60",
-      imageSrc: "/branding/kronix/card-moto.png",
-      imageAlt: "Mensajería",
-      imageWrap: "h-[72px] w-[98px]",
-      imageClassName: "object-contain scale-[1.5] translate-x-[-6px] translate-y-[6px]",
+      ...common,
+      label: "Motocarga",
+      imageAlt: "Motocarga",
+      tone: "bg-orange-50 text-orange-800 ring-1 ring-orange-200",
+      panelTone: "from-orange-50/70 via-white to-emerald-50/60",
+      imageClassName: "object-contain scale-[1.16] translate-x-[2px] translate-y-[4px]",
     };
   }
 
   return {
-    label: "Servicio",
-    tone: "bg-slate-50 text-slate-700 ring-1 ring-slate-200",
-    panelTone: "from-slate-50/60 via-white to-slate-100/60",
-    imageSrc: "/branding/kronix/kronix-icon.png",
-    imageAlt: "Servicio",
-    imageWrap: "h-[66px] w-[66px]",
-    imageClassName: "object-contain scale-[0.9] translate-x-0 translate-y-0",
+    ...common,
+    label: "Domi Express",
+    imageAlt: "Domicilio Express",
+    tone: "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200",
+    panelTone: "from-emerald-50/60 via-white to-cyan-50/60",
   };
 }
 
@@ -220,15 +247,13 @@ export default function AvailableOrderCard({
 
   const serviceMeta = getServiceMeta(order);
 
-  const orderType = String(order.orderType ?? "").trim().toUpperCase();
-  const serviceType = String(order.courierServiceType ?? "").trim().toUpperCase();
+  const serviceType = getOrderServiceType(order);
 
-  const isStoreOrder = orderType === "STORE";
-  const isCourierOrder = orderType === "COURIER";
-  const isDomiExpress = serviceType === "PICKUP_AND_DELIVERY";
+  const isStoreOrder = serviceType === "STORE";
+  const isPointOnlyService = serviceType === "DELIVERY" || serviceType === "TAXI" || serviceType === "MOTORCARGO";
 
   const showServiceDetails = isStoreOrder;
-  const showRouteSection = !isDomiExpress;
+  const showRouteSection = !isPointOnlyService;
 
   const note =
     typeof order.customerNote === "string"

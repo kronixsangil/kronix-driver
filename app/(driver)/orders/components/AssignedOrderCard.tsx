@@ -18,26 +18,48 @@ function normalizeName(value?: string | null) {
   return String(value ?? "").trim().toLowerCase();
 }
 
+function getOrderServiceType(order: DriverOrder) {
+  const direct = String(order.serviceType ?? "").trim().toUpperCase();
+  if (direct) return direct;
+
+  const legacy = String(order.courierServiceType ?? "").trim().toUpperCase();
+  if (legacy === "PICKUP_AND_DELIVERY") return "DELIVERY";
+  if (legacy === "SEND_PACKAGE") return "PACKAGE";
+  if (legacy === "ERRAND") return "ERRAND";
+
+  return legacy;
+}
+
 function getCourierType(order: DriverOrder) {
   return String(order.courierServiceType ?? "").trim().toUpperCase();
 }
 
+function getServiceAssetsSlug(serviceType: string) {
+  if (serviceType === "DELIVERY") return "delivery";
+  if (serviceType === "PACKAGE") return "package";
+  if (serviceType === "TAXI") return "taxi";
+  if (serviceType === "MOTORCARGO") return "motocarga";
+  return "delivery";
+}
+
 function getPickupPointTitle(order: DriverOrder) {
-  const type = getCourierType(order);
-  if (type === "ERRAND") return "Punto inicial";
-  if (type === "SEND_PACKAGE") return "Punto de recogida";
-  if (type === "PICKUP_AND_DELIVERY") return "Punto de recogida";
+  const type = getOrderServiceType(order);
+  if (type === "TAXI") return "Punto de encuentro";
+  if (type === "MOTORCARGO") return "Punto de recogida";
+  if (type === "PACKAGE") return "Punto de recogida";
+  if (type === "DELIVERY") return "Punto de recogida";
   return "Recogidas";
 }
 
 function getServiceMeta(order: DriverOrder) {
-  const serviceType = getCourierType(order);
+  const serviceType = getOrderServiceType(order);
+  const slug = getServiceAssetsSlug(serviceType);
 
-  if (serviceType === "SEND_PACKAGE") {
+  if (serviceType === "PACKAGE") {
     return {
       label: "KroniX Envíos",
-      imageSrc: "/branding/kronix/card-moto.png",
-      imageAlt: "Paquete",
+      imageSrc: `/services/${slug}/cardizq.png`,
+      imageAlt: "KroniX Envíos",
       tone: "bg-cyan-50 text-cyan-700 ring-1 ring-cyan-200",
       heroTone: "from-cyan-50 via-white to-sky-50",
       headerTitle: "Dirígete al punto de recogida",
@@ -48,26 +70,41 @@ function getServiceMeta(order: DriverOrder) {
     };
   }
 
-  if (serviceType === "ERRAND") {
+  if (serviceType === "TAXI") {
     return {
-      label: "Domicilios y Diligencias",
-      imageSrc: "/branding/kronix/check-list.png",
-      imageAlt: "Diligencia",
-      tone: "bg-violet-50 text-violet-700 ring-1 ring-violet-200",
-      heroTone: "from-violet-50 via-white to-emerald-50",
-      headerTitle: "Dirígete al punto inicial",
-      navigateText: "Navegar al punto inicial",
-      arrivedText: "Llegué al punto inicial",
-      readySingleText: "Ya puede iniciar con el servicio.",
-      footerText: "El servicio quedó reservado para ti.",
+      label: "Taxi",
+      imageSrc: `/services/${slug}/cardizq.png`,
+      imageAlt: "Taxi",
+      tone: "bg-yellow-50 text-yellow-800 ring-1 ring-yellow-200",
+      heroTone: "from-yellow-50 via-white to-sky-50",
+      headerTitle: "Dirígete al punto de encuentro",
+      navigateText: "Navegar al pasajero",
+      arrivedText: "Llegué por el pasajero",
+      readySingleText: "Ya puede iniciar el servicio.",
+      footerText: "Este servicio de Taxi ya está reservado para ti.",
     };
   }
 
-  if (serviceType === "PICKUP_AND_DELIVERY") {
+  if (serviceType === "MOTORCARGO") {
+    return {
+      label: "Motocarga",
+      imageSrc: `/services/${slug}/cardizq.png`,
+      imageAlt: "Motocarga",
+      tone: "bg-orange-50 text-orange-800 ring-1 ring-orange-200",
+      heroTone: "from-orange-50 via-white to-emerald-50",
+      headerTitle: "Dirígete al punto de recogida",
+      navigateText: "Navegar al punto de recogida",
+      arrivedText: "Llegué por la carga",
+      readySingleText: "Ya puede iniciar el servicio.",
+      footerText: "Este servicio de Motocarga ya está reservado para ti.",
+    };
+  }
+
+  if (serviceType === "DELIVERY") {
     return {
       label: "Domicilio Express",
-      imageSrc: "/branding/kronix/card-moto.png",
-      imageAlt: "Mensajería",
+      imageSrc: `/services/${slug}/cardizq.png`,
+      imageAlt: "Domicilio Express",
       tone: "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200",
       heroTone: "from-emerald-50 via-white to-cyan-50",
       headerTitle: "Dirígete al punto de recogida",
@@ -93,9 +130,10 @@ function getServiceMeta(order: DriverOrder) {
 }
 
 function formatPackageLabel(order: DriverOrder) {
-  const type = getCourierType(order);
-  if (type === "ERRAND") return "Descripción del servicio";
-  return "Descripción del paquete";
+  const type = getOrderServiceType(order);
+  if (type === "TAXI") return "Datos del servicio";
+  if (type === "MOTORCARGO") return "Descripción de la carga";
+  return "Descripción del servicio";
 }
 
 export default function AssignedOrderCard({
@@ -107,7 +145,7 @@ export default function AssignedOrderCard({
 }: Props) {
   const pickups = useMemo(() => order.pickupLocations ?? [], [order.pickupLocations]);
   const hasMultiple = pickups.length > 1;
-  const isCourierFlow = !!getCourierType(order);
+  const isCourierFlow = !!getOrderServiceType(order) && getOrderServiceType(order) !== "STORE";
 
   const [selectedPickupIndex, setSelectedPickupIndex] = useState<number | null>(
     hasMultiple ? null : pickups.length ? 0 : null

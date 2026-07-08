@@ -4,6 +4,12 @@
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import type { DriverOrder } from "../../lib/types";
+import {
+  formatPackageLabel,
+  getOrderServiceType,
+  getPickupServiceMeta,
+  normalizeName,
+} from "../../lib/serviceConfig";
 import ChecklistConfirmModal from "./ChecklistConfirmModal";
 
 interface Props {
@@ -12,118 +18,6 @@ interface Props {
   readyPickupStoreNames?: string[];
 }
 
-function normalizeName(value?: string | null) {
-  return String(value ?? "").trim().toLowerCase();
-}
-
-function getOrderServiceType(order: DriverOrder) {
-  const direct = String(order.serviceType ?? "").trim().toUpperCase();
-  if (direct) return direct;
-
-  const legacy = String(order.courierServiceType ?? "").trim().toUpperCase();
-  if (legacy === "PICKUP_AND_DELIVERY") return "DELIVERY";
-  if (legacy === "SEND_PACKAGE") return "PACKAGE";
-  if (legacy === "ERRAND") return "ERRAND";
-
-  return legacy;
-}
-
-function getCourierType(order: DriverOrder) {
-  return String(order.courierServiceType ?? "").trim().toUpperCase();
-}
-
-function getServiceAssetsSlug(serviceType: string) {
-  if (serviceType === "DELIVERY") return "delivery";
-  if (serviceType === "PACKAGE") return "package";
-  if (serviceType === "TAXI") return "taxi";
-  if (serviceType === "MOTORCARGO") return "motocarga";
-  return "delivery";
-}
-
-function getServiceMeta(order: DriverOrder) {
-  const serviceType = getOrderServiceType(order);
-  const slug = getServiceAssetsSlug(serviceType);
-
-  if (serviceType === "PACKAGE") {
-    return {
-      label: "KroniX Envíos",
-      imageSrc: `/services/${slug}/cardizq.png`,
-      imageAlt: "KroniX Envíos",
-      tone: "bg-cyan-50 text-cyan-700 ring-1 ring-cyan-200",
-      heroTone: "from-cyan-50 via-white to-sky-50",
-      headerTitle: "Confirma la recogida del paquete",
-      pickedUpText: "Recogí el paquete",
-      modalTitle: "Confirmación del paquete",
-      modalDescription: "Verifica que recibiste correctamente el paquete antes de continuar al destino.",
-      footerText: "Al confirmar, el servicio pasará a En ruta.",
-    };
-  }
-
-  if (serviceType === "TAXI") {
-    return {
-      label: "Taxi",
-      imageSrc: `/services/${slug}/cardizq.png`,
-      imageAlt: "Taxi",
-      tone: "bg-yellow-50 text-yellow-800 ring-1 ring-yellow-200",
-      heroTone: "from-yellow-50 via-white to-sky-50",
-      headerTitle: "Confirma que el pasajero abordó",
-      pickedUpText: "Pasajero abordó",
-      modalTitle: "Confirmación de pasajero",
-      modalDescription: "Confirma que el pasajero ya está contigo antes de iniciar el recorrido.",
-      footerText: "Al confirmar, el servicio pasará a En ruta.",
-    };
-  }
-
-  if (serviceType === "MOTORCARGO") {
-    return {
-      label: "Motocarga",
-      imageSrc: `/services/${slug}/cardizq.png`,
-      imageAlt: "Motocarga",
-      tone: "bg-orange-50 text-orange-800 ring-1 ring-orange-200",
-      heroTone: "from-orange-50 via-white to-emerald-50",
-      headerTitle: "Confirma la recogida de la carga",
-      pickedUpText: "Recogí la carga",
-      modalTitle: "Confirmación de carga",
-      modalDescription: "Verifica que recibiste correctamente la carga antes de continuar al destino.",
-      footerText: "Al confirmar, el servicio pasará a En ruta.",
-    };
-  }
-
-  if (serviceType === "DELIVERY") {
-    return {
-      label: "Domicilio Express",
-      imageSrc: `/services/${slug}/cardizq.png`,
-      imageAlt: "Domicilio Express",
-      tone: "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200",
-      heroTone: "from-emerald-50 via-white to-cyan-50",
-      headerTitle: "Confirma la recogida del encargo",
-      pickedUpText: "Recogí el encargo",
-      modalTitle: "Confirmación del encargo",
-      modalDescription: "Marca las casillas para confirmar que ya recibiste correctamente el encargo.",
-      footerText: "Al confirmar, el servicio pasará a En ruta.",
-    };
-  }
-
-  return {
-    label: "Tienda en línea",
-    imageSrc: "/branding/kronix/card-comprar.png",
-    imageAlt: "Tienda en línea",
-    tone: "bg-blue-50 text-blue-700 ring-1 ring-blue-200",
-    heroTone: "from-blue-50 via-white to-emerald-50",
-    headerTitle: "Confirma la recogida del pedido",
-    pickedUpText: "Recogí el pedido",
-    modalTitle: "Confirmación del pedido",
-    modalDescription: "Marca las casillas para confirmar que ya recogiste correctamente el pedido.",
-    footerText: "Al confirmar, el pedido pasará a En ruta.",
-  };
-}
-
-function formatPackageLabel(order: DriverOrder) {
-  const type = getOrderServiceType(order);
-  if (type === "TAXI") return "Datos del servicio";
-  if (type === "MOTORCARGO") return "Descripción de la carga";
-  return "Descripción del servicio";
-}
 
 export default function PickupOrderCard({
   order,
@@ -149,7 +43,7 @@ export default function PickupOrderCard({
   const [err, setErr] = useState<string | null>(null);
 
   const note = (order.customerNote ?? "").trim();
-  const serviceMeta = getServiceMeta(order);
+  const serviceMeta = getPickupServiceMeta(order);
   const packageDescription = String((order as any)?.packageDescription ?? "").trim();
 
   const checks = useMemo(() => {

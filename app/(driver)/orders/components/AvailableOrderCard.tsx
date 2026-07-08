@@ -4,6 +4,7 @@
 import Image from "next/image";
 import { useMemo, useState } from "react";
 import type { GeoPoint } from "../../lib/types";
+import { getAvailableServiceMeta, getOrderServiceType } from "../../lib/serviceConfig";
 
 type AvailableOrder = {
   orderId: string;
@@ -38,28 +39,6 @@ function formatCOP(value: number) {
   });
 }
 
-function getOrderServiceType(order: AvailableOrder) {
-  const direct = String(order.serviceType ?? "").trim().toUpperCase();
-  if (direct) return direct;
-
-  const legacy = String(order.courierServiceType ?? "").trim().toUpperCase();
-  if (legacy === "PICKUP_AND_DELIVERY") return "DELIVERY";
-  if (legacy === "SEND_PACKAGE") return "PACKAGE";
-  if (legacy === "ERRAND") return "ERRAND";
-
-  const orderType = String(order.orderType ?? "").trim().toUpperCase();
-  if (orderType === "STORE") return "STORE";
-
-  return legacy || orderType;
-}
-
-function getServiceAssetsSlug(serviceType: string) {
-  if (serviceType === "DELIVERY") return "delivery";
-  if (serviceType === "PACKAGE") return "package";
-  if (serviceType === "TAXI") return "taxi";
-  if (serviceType === "MOTORCARGO") return "motocarga";
-  return "delivery";
-}
 
 function buildStoreTitle(order: AvailableOrder) {
   const stores = Array.isArray(order.stores) ? order.stores : [];
@@ -108,70 +87,6 @@ function getBadge(order: AvailableOrder) {
   return {
     text: "DISPONIBLE",
     className: "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200",
-  };
-}
-
-function getServiceMeta(order: AvailableOrder) {
-  const serviceType = getOrderServiceType(order);
-  const slug = getServiceAssetsSlug(serviceType);
-
-  if (serviceType === "STORE") {
-    return {
-      label: "Tienda en línea",
-      tone: "bg-blue-50 text-blue-700 ring-1 ring-blue-200",
-      panelTone: "from-blue-50/60 via-white to-emerald-50/60",
-      imageSrc: "/branding/kronix/card-comprar.png",
-      imageAlt: "Tienda en línea",
-      imageWrap: "h-[72px] w-[92px]",
-      imageClassName: "object-contain scale-[1.5] translate-x-[10px] translate-y-[2px]",
-    };
-  }
-
-  const common = {
-    imageSrc: `/services/${slug}/cardder.png`,
-    imageAlt: "Servicio KroniX",
-    imageWrap: "h-[74px] w-[104px]",
-    imageClassName: "object-contain scale-[1.25] translate-x-[4px] translate-y-[3px]",
-  };
-
-  if (serviceType === "PACKAGE") {
-    return {
-      ...common,
-      label: "KroniX Envíos",
-      imageAlt: "KroniX Envíos",
-      tone: "bg-cyan-50 text-cyan-700 ring-1 ring-cyan-200",
-      panelTone: "from-cyan-50/60 via-white to-sky-50/60",
-    };
-  }
-
-  if (serviceType === "TAXI") {
-    return {
-      ...common,
-      label: "Taxi",
-      imageAlt: "Taxi",
-      tone: "bg-yellow-50 text-yellow-800 ring-1 ring-yellow-200",
-      panelTone: "from-yellow-50/70 via-white to-sky-50/60",
-      imageClassName: "object-contain scale-[1.18] translate-x-[2px] translate-y-[4px]",
-    };
-  }
-
-  if (serviceType === "MOTORCARGO") {
-    return {
-      ...common,
-      label: "Motocarga",
-      imageAlt: "Motocarga",
-      tone: "bg-orange-50 text-orange-800 ring-1 ring-orange-200",
-      panelTone: "from-orange-50/70 via-white to-emerald-50/60",
-      imageClassName: "object-contain scale-[1.16] translate-x-[2px] translate-y-[4px]",
-    };
-  }
-
-  return {
-    ...common,
-    label: "Domi Express",
-    imageAlt: "Domicilio Express",
-    tone: "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200",
-    panelTone: "from-emerald-50/60 via-white to-cyan-50/60",
   };
 }
 
@@ -245,7 +160,7 @@ export default function AvailableOrderCard({
   const fee = Number(order.deliveryFee ?? 0);
   const tip = Number(order.tip ?? 0);
 
-  const serviceMeta = getServiceMeta(order);
+  const serviceMeta = getAvailableServiceMeta(order);
 
   const serviceType = getOrderServiceType(order);
 

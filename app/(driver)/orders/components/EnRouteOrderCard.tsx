@@ -7,124 +7,17 @@
   import { driverUpdateOrderStatus } from "../../lib/driverOrderApi";
   import { openMapsNavigation } from "../../lib/openMaps";
   import type { DriverOrder } from "../../lib/types";
+  import {
+    formatPackageLabel,
+    getEnRouteServiceMeta,
+    getOrderServiceType,
+  } from "../../lib/serviceConfig";
 
   interface Props {
     order: DriverOrder;
     onDelivered?: () => void;
   }
 
-  function getOrderServiceType(order: DriverOrder) {
-    const direct = String(order.serviceType ?? "").trim().toUpperCase();
-    if (direct) return direct;
-
-    const legacy = String(order.courierServiceType ?? "").trim().toUpperCase();
-    if (legacy === "PICKUP_AND_DELIVERY") return "DELIVERY";
-    if (legacy === "SEND_PACKAGE") return "PACKAGE";
-    if (legacy === "ERRAND") return "ERRAND";
-
-    return legacy;
-  }
-
-  function getServiceAssetsSlug(serviceType: string) {
-    if (serviceType === "DELIVERY") return "delivery";
-    if (serviceType === "PACKAGE") return "package";
-    if (serviceType === "TAXI") return "taxi";
-    if (serviceType === "MOTORCARGO") return "motocarga";
-    return "delivery";
-  }
-
-  function getCourierType(order: DriverOrder) {
-    return String(order.courierServiceType ?? "").trim().toUpperCase();
-  }
-
-  function isErrand(order: DriverOrder) {
-    return getCourierType(order) === "ERRAND";
-  }
-
-  function getServiceMeta(order: DriverOrder) {
-    const serviceType = getOrderServiceType(order);
-    const slug = getServiceAssetsSlug(serviceType);
-
-    if (serviceType === "PACKAGE") {
-      return {
-        label: "KroniX Envíos",
-        imageSrc: `/services/${slug}/cardizq.png`,
-        imageAlt: "KroniX Envíos",
-        tone: "bg-cyan-50 text-cyan-700 ring-1 ring-cyan-200",
-        heroTone: "from-cyan-50 via-white to-sky-50",
-        headerTitle: "Dirígete al punto final",
-        destinationLabel: "Destino",
-        navigateText: "Navegar al destino",
-        deliveredText: "Entregué el paquete",
-        footerText: "Confirmar finaliza el servicio.",
-      };
-    }
-
-    if (serviceType === "TAXI") {
-      return {
-        label: "Taxi",
-        imageSrc: `/services/${slug}/cardizq.png`,
-        imageAlt: "Taxi",
-        tone: "bg-yellow-50 text-yellow-800 ring-1 ring-yellow-200",
-        heroTone: "from-yellow-50 via-white to-sky-50",
-        headerTitle: "Finaliza el recorrido",
-        destinationLabel: "Destino del pasajero",
-        navigateText: "Navegar al destino",
-        deliveredText: "Finalicé el viaje",
-        footerText: "Confirmar finaliza el servicio de Taxi.",
-      };
-    }
-
-    if (serviceType === "MOTORCARGO") {
-      return {
-        label: "Motocarga",
-        imageSrc: `/services/${slug}/cardizq.png`,
-        imageAlt: "Motocarga",
-        tone: "bg-orange-50 text-orange-800 ring-1 ring-orange-200",
-        heroTone: "from-orange-50 via-white to-emerald-50",
-        headerTitle: "Entrega la carga en destino",
-        destinationLabel: "Destino de la carga",
-        navigateText: "Navegar al destino",
-        deliveredText: "Entregué la carga",
-        footerText: "Confirmar finaliza el servicio de Motocarga.",
-      };
-    }
-
-    if (serviceType === "DELIVERY") {
-      return {
-        label: "Domicilio Express",
-        imageSrc: `/services/${slug}/cardizq.png`,
-        imageAlt: "Domicilio Express",
-        tone: "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200",
-        heroTone: "from-emerald-50 via-white to-cyan-50",
-        headerTitle: "Dirígete al punto final",
-        destinationLabel: "Destino",
-        navigateText: "Navegar al destino",
-        deliveredText: "Completé el servicio",
-        footerText: "Confirmar finaliza el servicio.",
-      };
-    }
-
-    return {
-      label: "Tienda en línea",
-      imageSrc: "/branding/kronix/card-comprar.png",
-      imageAlt: "Tienda en línea",
-      tone: "bg-blue-50 text-blue-700 ring-1 ring-blue-200",
-      heroTone: "from-blue-50 via-white to-emerald-50",
-      headerTitle: "Dirígete al cliente",
-      destinationLabel: "Destino",
-      navigateText: "Navegar al cliente",
-      deliveredText: "Entregué el pedido",
-      footerText: "Confirmar finaliza el pedido.",
-    };
-  }
-
-  function formatPackageLabel(order: DriverOrder) {
-    const type = getOrderServiceType(order);
-    if (type === "TAXI") return "Datos del servicio";
-    if (type === "MOTORCARGO") return "Descripción de la carga";
-    return "Descripción del servicio";
-  }
 
   function buildRouteFromStops(order: DriverOrder) {
     const normalize = (v: unknown) =>
@@ -176,7 +69,7 @@
     const [openDestination, setOpenDestination] = useState(false);
     const [selectedDestinationIndex, setSelectedDestinationIndex] = useState(0);
 
-    const serviceMeta = getServiceMeta(order);
+    const serviceMeta = getEnRouteServiceMeta(order);
     const isCourierFlow = !!getOrderServiceType(order) && getOrderServiceType(order) !== "STORE";
     const packageDescription = String((order as any)?.packageDescription ?? "").trim();
 

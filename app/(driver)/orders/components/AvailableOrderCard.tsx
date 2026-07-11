@@ -2,7 +2,7 @@
 "use client";
 
 import Image from "next/image";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { GeoPoint } from "../../lib/types";
 import { getAvailableServiceMeta, getOrderServiceType } from "../../lib/serviceConfig";
 
@@ -13,6 +13,7 @@ type AvailableOrder = {
   deliveryFee: number;
   tip?: number;
 
+  pickupLocations?: GeoPoint[];
   pickupLocation?: GeoPoint;
   dropoffLocation?: GeoPoint;
 
@@ -37,6 +38,168 @@ function formatCOP(value: number) {
     currency: "COP",
     maximumFractionDigits: 0,
   });
+}
+
+
+function toNumber(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim()) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
+function getLat(point: unknown): number | null {
+  if (!point || typeof point !== "object") return null;
+  const p = point as Record<string, unknown>;
+  return toNumber(p.lat ?? p.latitude);
+}
+
+function getLng(point: unknown): number | null {
+  if (!point || typeof point !== "object") return null;
+  const p = point as Record<string, unknown>;
+  return toNumber(p.lng ?? p.lon ?? p.longitude);
+}
+
+function readPointFromObject(value: unknown): { lat: number; lng: number } | null {
+  if (!value || typeof value !== "object") return null;
+
+  const obj = value as Record<string, unknown>;
+
+  const lat = toNumber(
+    obj.lat ??
+      obj.latitude ??
+      obj.pickupLat ??
+      obj.pickupLatitude ??
+      obj.originLat ??
+      obj.originLatitude
+  );
+
+  const lng = toNumber(
+    obj.lng ??
+      obj.lon ??
+      obj.longitude ??
+      obj.pickupLng ??
+      obj.pickupLon ??
+      obj.pickupLongitude ??
+      obj.originLng ??
+      obj.originLon ??
+      obj.originLongitude
+  );
+
+  if (
+    lat !== null &&
+    lng !== null &&
+    Number.isFinite(lat) &&
+    Number.isFinite(lng) &&
+    !(lat === 0 && lng === 0)
+  ) {
+    return { lat, lng };
+  }
+
+  const coordinates = obj.coordinates;
+  if (Array.isArray(coordinates) && coordinates.length >= 2) {
+    /*
+      Formato común GeoJSON: [lng, lat].
+      Algunos servicios guardan [lat, lng], por eso validamos rangos.
+    */
+    const first = toNumber(coordinates[0]);
+    const second = toNumber(coordinates[1]);
+
+    if (first !== null && second !== null) {
+      if (Math.abs(first) <= 90 && Math.abs(second) <= 180) {
+        return { lat: first, lng: second };
+      }
+
+      if (Math.abs(second) <= 90 && Math.abs(first) <= 180) {
+        return { lat: second, lng: first };
+      }
+    }
+  }
+
+  return null;
+}
+
+function getOrderPickupPoint(order: AvailableOrder): { lat: number; lng: number } | null {
+  const direct = readPointFromObject(order);
+  if (direct) return direct;
+
+  const pickupLocations = Array.isArray(order.pickupLocations)
+    ? order.pickupLocations
+    : [];
+
+  for (const pickup of pickupLocations) {
+    const point = readPointFromObject(pickup);
+    if (point) return point;
+  }
+
+  const candidates = [
+    order.pickupLocation,
+    (order as any).pickup,
+    (order as any).pickupPoint,
+    (order as any).pickupCoordinates,
+    (order as any).originLocation,
+    (order as any).origin,
+    (order as any).originPoint,
+    (order as any).fromLocation,
+    (order as any).from,
+    (order as any).customerLocation,
+    (order as any).customerAddressLocation,
+    (order as any).addressLocation,
+    (order as any).startLocation,
+    (order as any).start,
+  ];
+
+  for (const candidate of candidates) {
+    const point = readPointFromObject(candidate);
+    if (point) return point;
+  }
+
+  const stops = (order as any).stops ?? (order as any).routeStops ?? (order as any).serviceStops;
+  if (Array.isArray(stops)) {
+    for (const stop of stops) {
+      const point = readPointFromObject(stop);
+      if (point) return point;
+
+      const nested = readPointFromObject((stop as any)?.location ?? (stop as any)?.point);
+      if (nested) return nested;
+    }
+  }
+
+  const routePoints = (order as any).routePoints ?? (order as any).points;
+  if (Array.isArray(routePoints)) {
+    for (const routePoint of routePoints) {
+      const point = readPointFromObject(routePoint);
+      if (point) return point;
+    }
+  }
+
+  return null;
+}
+function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
+  const R = 6371;
+  const dLat = ((b.lat - a.lat) * Math.PI) / 180;
+  const dLng = ((b.lng - a.lng) * Math.PI) / 180;
+  const lat1 = (a.lat * Math.PI) / 180;
+  const lat2 = (b.lat * Math.PI) / 180;
+
+  const x =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+
+  return 2 * R * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
+}
+
+function formatKm(value: number | null) {
+  if (typeof value !== "number" || !Number.isFinite(value)) return "—";
+  if (value < 10) return `${value.toFixed(1)} km`;
+  return `${Math.round(value)} km`;
+}
+
+function getWorkerServiceCharge(order: AvailableOrder) {
+  const direct = toNumber(order.workerCommissionCOP);
+  return direct !== null && direct > 0 ? direct : 0;
 }
 
 
@@ -90,28 +253,6 @@ function getBadge(order: AvailableOrder) {
   };
 }
 
-function Chip({
-  label,
-  value,
-  tone = "neutral",
-}: {
-  label: string;
-  value: string;
-  tone?: "neutral" | "good";
-}) {
-  const cls =
-    tone === "good"
-      ? "bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200"
-      : "bg-slate-50 text-slate-700 ring-1 ring-slate-200";
-
-  return (
-    <div className={`rounded-xl px-3 py-2 text-xs ${cls}`}>
-      <div className="text-[10px] font-semibold uppercase tracking-wide opacity-70">{label}</div>
-      <div className="mt-0.5 text-sm font-extrabold">{value}</div>
-    </div>
-  );
-}
-
 function AccordionRow({
   title,
   open,
@@ -152,13 +293,14 @@ export default function AvailableOrderCard({
   accepting?: boolean;
 }) {
   const [openRoute, setOpenRoute] = useState(false);
-  const [openNote, setOpenNote] = useState(false);
+  const [driverPoint, setDriverPoint] = useState<{ lat: number; lng: number } | null>(null);
 
   const title = buildStoreTitle(order);
   const pickupsLabel = buildPickupsLabel(order.stores ?? []);
-  const km = Number(order.distanceKm ?? 0);
-  const fee = Number(order.deliveryFee ?? 0);
+  const fallbackKm = Number(order.distanceKm ?? 0);
   const tip = Number(order.tip ?? 0);
+  const deliveryFee = Number(order.deliveryFee ?? 0);
+  const workerServiceCharge = getWorkerServiceCharge(order);
 
   const serviceMeta = getAvailableServiceMeta(order);
 
@@ -177,11 +319,80 @@ export default function AvailableOrderCard({
         ? String((order as any).notes)
         : "";
 
+  const cleanNote = note.trim();
+  const serviceMessage =
+    cleanNote ||
+    "Cliente solicita tu servicio en la dirección mostrada, dirígete allí lo más pronto posible.";
+
   const route = useMemo(() => {
     return Array.isArray(order.routeAddresses) && order.routeAddresses.length
       ? order.routeAddresses
       : [order.pickupLocation?.address, order.dropoffLocation?.address].filter(Boolean);
   }, [order.routeAddresses, order.pickupLocation?.address, order.dropoffLocation?.address]);
+
+
+  const pickupPoint = useMemo(() => getOrderPickupPoint(order), [order]);
+
+  useEffect(() => {
+    // Servicios: calcular distancia Worker → punto de recogida desde que la tarjeta aparece.
+    // Tienda en Línea: conservar exactamente el comportamiento previo.
+    if (isStoreOrder && !expanded) return;
+    if (!pickupPoint) return;
+    if (typeof navigator === "undefined" || !navigator.geolocation) return;
+
+    let cancelled = false;
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        if (cancelled) return;
+        setDriverPoint({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        });
+      },
+      () => {
+        if (cancelled) return;
+        setDriverPoint(null);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 8000,
+        maximumAge: 30000,
+      }
+    );
+
+    return () => {
+      cancelled = true;
+    };
+  }, [expanded, pickupPoint, isStoreOrder]);
+
+  const pickupDistanceKm = useMemo(() => {
+    /*
+      IMPORTANTE:
+      - Tienda en Línea NO se modifica: conserva la distancia que llega en la orden.
+      - Servicios KroniX intentan calcular distancia desde el Worker hasta el punto de recogida.
+    */
+    if (isStoreOrder) {
+      return Number.isFinite(fallbackKm) ? fallbackKm : 0;
+    }
+
+    if (driverPoint && pickupPoint) {
+      return haversineKm(driverPoint, pickupPoint);
+    }
+
+    if (Number.isFinite(fallbackKm) && fallbackKm > 0) {
+      return fallbackKm;
+    }
+
+    return null;
+  }, [driverPoint, pickupPoint, fallbackKm, isStoreOrder]);
+
+  const distanceLabel = formatKm(pickupDistanceKm);
+  const amountPillLabel = isStoreOrder
+    ? `Envío ${formatCOP(deliveryFee)}`
+    : workerServiceCharge > 0
+      ? `Comisión ${formatCOP(workerServiceCharge)}`
+      : "Comisión por confirmar";
 
   const addr =
     typeof order.customerAddress === "string" && order.customerAddress.trim()
@@ -193,7 +404,6 @@ export default function AvailableOrderCard({
   const onToggleLocal = () => {
     if (expanded) {
       setOpenRoute(false);
-      setOpenNote(false);
     }
     onToggle();
   };
@@ -215,7 +425,7 @@ export default function AvailableOrderCard({
             <div className="flex items-start gap-3">
               <div className="mt-[2px] flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white ring-1 ring-slate-200 shadow-sm">
                 <Image
-                  src="/branding/kronix/kronix-icon.png"
+                  src="/branding/kronix/logoorder.png"
                   alt="KroniX"
                   width={30}
                   height={30}
@@ -247,11 +457,11 @@ export default function AvailableOrderCard({
 
                 <div className="mt-2 flex flex-wrap items-center gap-2">
                   <span className="inline-flex items-center rounded-full bg-white px-2.5 py-[6px] text-[12px] font-bold leading-none text-slate-700 ring-1 ring-slate-200 shadow-sm">
-                    {km.toFixed(1)} km
+                    {distanceLabel}
                   </span>
 
                   <span className="inline-flex items-center rounded-full bg-white px-2.5 py-[6px] text-[12px] font-bold leading-none text-slate-700 ring-1 ring-slate-200 shadow-sm">
-                    Envío {formatCOP(fee)}
+                    {amountPillLabel}
                   </span>
 
                   {tip > 0 ? (
@@ -301,11 +511,6 @@ export default function AvailableOrderCard({
               </>
             ) : null}
 
-            <div className="grid grid-cols-2 gap-2">
-              <Chip label="Distancia total" value={`${km.toFixed(1)} km`} />
-              <Chip label="Pago total" value={formatCOP(fee + tip)} tone="good" />
-            </div>
-
                         {showRouteSection ? (
               <div className="space-y-2">
                 <AccordionRow
@@ -342,21 +547,15 @@ export default function AvailableOrderCard({
               <p className="mt-1 text-sm text-slate-700">{addr || "—"}</p>
             </div>
 
-            <div className="space-y-2">
-              <AccordionRow
-                title="Comentario del cliente"
-                open={openNote}
-                onToggle={() => setOpenNote((v) => !v)}
-              />
-
-              {openNote ? (
-                <div className="rounded-xl bg-white px-3 py-2 ring-1 ring-gray-200">
-                  <p className="whitespace-pre-wrap text-sm text-slate-700">{note || "—"}</p>
-                </div>
-              ) : null}
+            <div className="rounded-xl bg-white px-3 py-2 ring-1 ring-gray-200">
+              <p className="text-[11px] font-extrabold uppercase tracking-wide text-slate-600">
+                {cleanNote ? "Comentario del cliente" : "Información del servicio"}
+              </p>
+              <p className="mt-1 whitespace-pre-wrap text-sm text-slate-700">
+                {serviceMessage}
+              </p>
             </div>
           </div>
-
           <button
             type="button"
             disabled={accepting}

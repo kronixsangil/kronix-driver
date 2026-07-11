@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "../../../lib/apiFetch";
 import { loadDriverHistoryWithSnapshot, type DriverHistoryItem } from "../lib/driverHistory";
 import { useDriverCity } from "../components/DriverCityContext";
+import { getServiceConfig } from "../lib/serviceConfig";
 
 type PayStatus = "PENDING" | "PAID";
 type RangeFilter = "30D" | "90D" | "ALL";
@@ -67,6 +68,13 @@ type DriverPayoutItem = {
 type DriverPayoutsResponse = { items: DriverPayoutItem[] };
 
 const CARD = "rounded-2xl border border-gray-200 bg-white shadow-sm";
+
+function getEarningDisplayName(item: DriverHistoryItem) {
+  const meta = getServiceConfig(item as any);
+  if (meta.serviceType !== "STORE" && meta.serviceType !== "UNKNOWN") return meta.label;
+  return item.storeName || meta.label;
+}
+
 
 export default function DriverEarningsPage() {
   const { cityLabel, cityName, loading: cityLoading } = useDriverCity();
@@ -161,7 +169,7 @@ export default function DriverEarningsPage() {
       ? ranged
       : ranged.filter((x) => {
           const dateText = formatDate(x.deliveredAtISO).toLowerCase();
-          return x.storeName.toLowerCase().includes(nq) || x.id.toLowerCase().includes(nq) || dateText.includes(nq);
+          return getEarningDisplayName(x).toLowerCase().includes(nq) || x.id.toLowerCase().includes(nq) || dateText.includes(nq);
         });
 
     return searched;
@@ -445,7 +453,7 @@ export default function DriverEarningsPage() {
                               <div key={it.historyId} className="rounded-xl border border-gray-200 bg-white p-3 text-sm">
                                 <div className="flex items-start justify-between gap-2">
                                   <div className="min-w-0">
-                                    <div className="truncate font-extrabold text-gray-900">{it.storeName}</div>
+                                    <div className="truncate font-extrabold text-gray-900">{getEarningDisplayName(it)}</div>
                                     <div className="mt-1 text-xs text-gray-600">{formatDate(it.deliveredAtISO)}</div>
                                     <div className="mt-1 text-xs text-gray-600">
                                       Pedido: <span className="font-mono">{it.id}</span>
@@ -482,7 +490,7 @@ export default function DriverEarningsPage() {
         </div>
 
         <div className="mt-2 text-center text-[11px] text-gray-500">
-          Ganancias del conductor integradas al esquema multiciudad. ✅
+          Ganancias del worker integradas al esquema multiciudad. ✅
         </div>
       </div>
     </div>

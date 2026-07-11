@@ -148,15 +148,7 @@ export default function PickupOrderCard({
       <div className="mx-auto w-full max-w-lg">
         <div className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_12px_28px_rgba(15,23,42,0.08)]">
           <div className={`relative overflow-hidden bg-gradient-to-br ${serviceMeta.heroTone} px-4 pt-4 pb-4`}>
-            <div className="relative z-10">
-                <div className="absolute right-1 top-0 z-20 text-right">
-    <div className="text-[10px] font-black uppercase tracking-[0.12em] text-emerald-700">
-      Pago
-    </div>
-    <div className="text-[17px] font-black leading-tight text-emerald-700">
-      ${payout.toLocaleString("es-CO")}
-    </div>
-  </div>
+            <div className="relative z-10">                
   <div className="pointer-events-none absolute left-[-10px] top-[-20px]">
     <div className="relative h-[70px] w-[70px]">
       <Image

@@ -68,6 +68,9 @@ type AvailableOrder = {
   deliveryFee: number;
   tip?: number;
   orderType?: string | null;
+  serviceType?: "STORE" | "DELIVERY" | "PACKAGE" | "TAXI" | "MOTORCARGO" | string | null;
+  requiredWorkerType?: "MOTORCYCLE" | "TAXI" | "MOTORCARGO" | string | null;
+  workerCommissionCOP?: number | null;
   courierServiceType?: "PICKUP_AND_DELIVERY" | "SEND_PACKAGE" | "ERRAND" | string | null;
   createdAt: number;
   pickupLocations?: GeoPoint[];
@@ -591,7 +594,17 @@ function normalizeAvailable(raw: any): AvailableOrder | null {
     },
     createdAt: Number.isFinite(createdAt) ? createdAt : Date.now(),
     orderType: raw?.orderType ? String(raw.orderType) : null,
-    courierServiceType: raw?.courierServiceType ? String(raw.courierServiceType) : null,
+    serviceType: raw?.serviceType ? String(raw.serviceType) : null,
+    requiredWorkerType: raw?.requiredWorkerType
+      ? String(raw.requiredWorkerType)
+      : null,
+    workerCommissionCOP:
+      raw?.workerCommissionCOP != null
+        ? Number(raw.workerCommissionCOP)
+        : null,
+    courierServiceType: raw?.courierServiceType
+      ? String(raw.courierServiceType)
+      : null,
     deliveryFee,
     tip,
     pickupLocations,
@@ -722,7 +735,17 @@ async function fetchOrderFromApi(orderId: string): Promise<AvailableOrder | null
       },
       createdAt: new Date(String(o?.createdAt ?? new Date().toISOString())).getTime(),
       orderType: o?.orderType ? String(o.orderType) : null,
-      courierServiceType: o?.courierServiceType ? String(o.courierServiceType) : null,
+      serviceType: o?.serviceType ? String(o.serviceType) : null,
+      requiredWorkerType: o?.requiredWorkerType
+        ? String(o.requiredWorkerType)
+        : null,
+      workerCommissionCOP:
+        o?.workerCommissionCOP != null
+          ? Number(o.workerCommissionCOP)
+          : null,
+      courierServiceType: o?.courierServiceType
+        ? String(o.courierServiceType)
+        : null,
       deliveryFee,
       tip,
       pickupLocations,
@@ -1630,6 +1653,12 @@ setAssignedStep(nextStep);
         const orderDTO: DriverOrder = {
       orderId: assignedOrder.orderId,
       storeName,
+      serviceType: assignedOrder.serviceType ?? null,
+      requiredWorkerType: assignedOrder.requiredWorkerType ?? null,
+      workerCommissionCOP:
+        assignedOrder.workerCommissionCOP != null
+          ? Number(assignedOrder.workerCommissionCOP)
+          : null,
       courierServiceType: assignedOrder.courierServiceType ?? null,
       distanceKm: Number(assignedOrder.distanceKm ?? 0),
       payout,

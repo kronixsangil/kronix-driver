@@ -1,4 +1,5 @@
 // app/(driver)/components/DriverBottomNav.tsx
+// app/(driver)/components/DriverBottomNav.tsx
 "use client";
 
 import Link from "next/link";
@@ -6,7 +7,7 @@ import { usePathname } from "next/navigation";
 
 /**
  * BottomNav Worker
- * Tabs: Inicio / Historial / Ganancias / Perfil
+ * Tabs: Inicio / Historial / Saldo / Ganancias / Perfil
  */
 
 function IconHome({ active }: { active: boolean }) {
@@ -85,6 +86,38 @@ function IconEarnings() {
   );
 }
 
+
+function IconWallet() {
+  return (
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+    >
+      <path
+        d="M4 7.5A2.5 2.5 0 0 1 6.5 5H18a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6.5A2.5 2.5 0 0 1 4 16.5v-9Z"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M16 12h4"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <path
+        d="M7 8.5h7"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 function IconProfile() {
   return (
     <svg
@@ -118,7 +151,7 @@ export default function DriverBottomNav() {
   const itemClass = (active: boolean) =>
     [
       "flex flex-col items-center justify-center gap-1 text-[11px]",
-      "min-w-[64px] py-1",
+      "min-w-[56px] py-1",
       active
         ? "text-green-600 font-extrabold"
         : "text-gray-500 font-semibold",
@@ -140,6 +173,14 @@ export default function DriverBottomNav() {
         >
           <IconHistory />
           <span>Historial</span>
+        </Link>
+
+        <Link
+          className={itemClass(isActive("/wallet"))}
+          href="/wallet"
+        >
+          <IconWallet />
+          <span>Saldo</span>
         </Link>
 
         <Link

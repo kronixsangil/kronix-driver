@@ -201,8 +201,16 @@
     const res = await driverUpdateOrderStatus(order.orderId, "DELIVERED");
 
     if (res && "ok" in res && !res.ok) {
-      throw new Error("No se pudo marcar DELIVERED en backend.");
+      const backendMessage =
+        (res as any)?.error?.message ||
+        (res as any)?.error?.data?.message ||
+        (res as any)?.error?.response?.message ||
+        "No se pudo finalizar el servicio.";
+
+      throw new Error(String(backendMessage));
     }
+
+    const completionData = (res as any)?.data ?? null;
 
     pushDriverSyncEvent({
       orderId: order.orderId,
@@ -217,6 +225,15 @@
           orderId: order.orderId,
           status: "DELIVERED",
           flowStatus: "DELIVERED",
+          workerCommissionCOP: Number(
+            completionData?.workerCommissionCOP ??
+              (order as any)?.workerCommissionCOP ??
+              0
+          ),
+          workerCommissionDebited: Boolean(
+            completionData?.workerCommissionDebited
+          ),
+          wallet: completionData?.wallet ?? null,
           at: Date.now(),
         },
       })
@@ -240,7 +257,7 @@
 
               <div className="relative z-10">
                 <div className="pointer-events-none absolute left-[-10px] top-[-5px]">
-                  <div className="relative h-[90px] w-[90px]">
+                  <div className="relative h-[60px] w-[60px]">
                     <Image
                       src={serviceMeta.imageSrc}
                       alt={serviceMeta.imageAlt}
@@ -249,17 +266,7 @@
                       sizes="60px"
                     />
                   </div>
-                </div>
-
-                <div className="absolute right-0 top-0 text-right">
-                  <div className="text-[10px] font-black uppercase tracking-[0.16em] text-emerald-700">
-                    Pago
-                  </div>
-                  <div className="text-[18px] font-black leading-tight text-emerald-700">
-                    ${payout.toLocaleString("es-CO")}
-                  </div>
-                </div>
-
+                </div>                
                 <div className="flex flex-col items-center text-center">
                   <div className="flex w-full justify-start pl-[56px] pr-[92px]">
                     <span
@@ -330,8 +337,9 @@
                   ) : null}
                 </div>
               ) : null}
-
+{serviceMeta.showDestinationButton && (
               <div className="mt-4 rounded-[20px] border border-slate-200 bg-white p-1.5">
+                
                 <button
                   type="button"
                   onClick={() => setOpenDestination((v) => !v)}
@@ -345,6 +353,7 @@
                     {openDestination ? "−" : "📍"}
                   </div>
                 </button>
+                
 
                 {openDestination ? (
                   <div className="mt-3 space-y-2">
@@ -394,6 +403,7 @@
                   </div>
                 ) : null}
               </div>
+              )}
 
               {order.customerPhone ? (
                 <a
@@ -411,12 +421,14 @@
                 </div>
               ) : null}
 
-              <button
-                onClick={handleNavigateDestination}
-                className="mt-4 w-full rounded-[20px] bg-blue-600 py-3 text-[15px] font-extrabold text-white hover:bg-blue-700"
-              >
-                {serviceMeta.navigateText}
-              </button>
+              {serviceMeta.showDestinationButton && (
+  <button
+    onClick={handleNavigateDestination}
+    className="mt-4 w-full rounded-[20px] bg-blue-600 py-3 text-[15px] font-extrabold text-white hover:bg-blue-700"
+  >
+    {serviceMeta.navigateText}
+  </button>
+)}
 
               <button
                 disabled={delivering}

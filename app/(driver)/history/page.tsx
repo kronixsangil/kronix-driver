@@ -1,9 +1,11 @@
 // app/(driver)/history/page.tsx
+// app/(driver)/history/page.tsx
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { loadDriverHistoryWithSnapshot, type DriverHistoryItem } from "../lib/driverHistory";
 import { useDriverCity } from "../components/DriverCityContext";
+import { getServiceConfig } from "../lib/serviceConfig";
 
 function formatCOP(v: number) {
   return v.toLocaleString("es-CO", { style: "currency", currency: "COP" });
@@ -19,6 +21,13 @@ function formatDate(iso: string) {
 
 type Filter = "ALL" | "DELIVERED" | "CANCELLED";
 const CARD = "rounded-2xl border border-gray-200 bg-white shadow-sm";
+
+function getHistoryDisplayName(item: DriverHistoryItem) {
+  const meta = getServiceConfig(item as any);
+  if (meta.serviceType !== "STORE" && meta.serviceType !== "UNKNOWN") return meta.label;
+  return item.storeName || meta.label;
+}
+
 
 export default function DriverHistoryPage() {
   const { cityLabel, cityName, loading: cityLoading } = useDriverCity();
@@ -68,7 +77,7 @@ export default function DriverHistoryPage() {
         if (!normalizedQ) return true;
         const dateText = formatDate(it.deliveredAtISO).toLowerCase();
         return (
-          it.storeName.toLowerCase().includes(normalizedQ) ||
+          getHistoryDisplayName(it).toLowerCase().includes(normalizedQ) ||
           it.id.toLowerCase().includes(normalizedQ) ||
           dateText.includes(normalizedQ) ||
           it.status.toLowerCase().includes(normalizedQ)
@@ -224,7 +233,7 @@ export default function DriverHistoryPage() {
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
-                          <div className="truncate text-sm font-extrabold text-gray-900">{h.storeName}</div>
+                          <div className="truncate text-sm font-extrabold text-gray-900">{getHistoryDisplayName(h)}</div>
                           <div className="mt-1 text-xs font-semibold text-gray-600">{formatDate(h.deliveredAtISO)}</div>
                         </div>
 
@@ -263,7 +272,7 @@ export default function DriverHistoryPage() {
                           <div className="grid grid-cols-2 gap-3">
                             <div className="rounded-xl bg-white p-3 ring-1 ring-gray-200">
                               <div className="text-[11px] font-semibold text-gray-500">Comercio</div>
-                              <div className="mt-1 text-sm font-bold text-gray-900 line-clamp-2">{h.storeName}</div>
+                              <div className="mt-1 text-sm font-bold text-gray-900 line-clamp-2">{getHistoryDisplayName(h)}</div>
                             </div>
 
                             <div className="rounded-xl bg-white p-3 ring-1 ring-gray-200">
@@ -307,9 +316,11 @@ export default function DriverHistoryPage() {
         </div>
 
         <div className="mt-2 text-center text-[11px] text-gray-500">
-          Consejo: historial del conductor alineado con tu operación multiciudad. ✅
+          Consejo: historial del worker alineado con tu operación multiciudad. ✅
         </div>
       </div>
     </div>
   );
 }
+
+

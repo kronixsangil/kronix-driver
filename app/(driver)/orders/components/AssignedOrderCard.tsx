@@ -21,6 +21,19 @@ interface Props {
   readyPickupStoreNames?: string[];
 }
 
+function cleanWorkerServiceText(value: string, workerLabel: string) {
+  const label = workerLabel || "trabajador";
+  const lowerLabel = label.toLowerCase();
+
+  return String(value ?? "")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => !/^TIPO\s+(DE\s+)?WORKER\s*:/i.test(line))
+    .join("\n")
+    .replace(/\bworkers\b/gi, `${lowerLabel}s`)
+    .replace(/\bworker\b/gi, lowerLabel)
+    .trim();
+}
 
 export default function AssignedOrderCard({
   order,
@@ -31,7 +44,8 @@ export default function AssignedOrderCard({
 }: Props) {
   const pickups = useMemo(() => order.pickupLocations ?? [], [order.pickupLocations]);
   const hasMultiple = pickups.length > 1;
-  const isCourierFlow = !!getOrderServiceType(order) && getOrderServiceType(order) !== "STORE";
+  const detectedServiceType = getOrderServiceType(order);
+  const isCourierFlow = detectedServiceType !== "STORE" && detectedServiceType !== "UNKNOWN";
 
   const [selectedPickupIndex, setSelectedPickupIndex] = useState<number | null>(
     hasMultiple ? null : pickups.length ? 0 : null
@@ -66,6 +80,8 @@ const [arriving, setArriving] = useState(false);
   const km = Number(order.distanceKm ?? 0);
   const payout = Number(order.payout ?? 0);
   const packageDescription = String((order as any)?.packageDescription ?? "").trim();
+  const cleanedPackageDescription = cleanWorkerServiceText(packageDescription, (serviceMeta as any).workerLabel);
+  const cleanedCustomerNote = cleanWorkerServiceText(String(order.customerNote ?? ""), (serviceMeta as any).workerLabel);
 
   const selectedPickupAny = selectedPickup as any;
   const pickupPlaceName = String(selectedPickupAny?.placeName ?? "").trim();
@@ -92,11 +108,11 @@ const [arriving, setArriving] = useState(false);
     <div className="min-h-screen bg-slate-50 px-0 py-0">
       <div className="mx-auto w-full max-w-lg">
         <div className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_12px_28px_rgba(15,23,42,0.08)]">
-          <div className={`relative overflow-hidden bg-gradient-to-br ${serviceMeta.heroTone} px-4 pt-4 pb-4`}>
+          <div className={`relative overflow-hidden bg-gradient-to-br ${serviceMeta.heroTone} px-4 pt-3 pb-2`}>
             <div className="pointer-events-none absolute inset-0 opacity-60" />
             <div className="relative z-10">
   <div className="pointer-events-none absolute left-[-2px] top-[-10px]">
-    <div className="relative h-[80px] w-[80px]">
+    <div className="relative h-[60px] w-[60px]">
       <Image
         src={serviceMeta.imageSrc}
         alt={serviceMeta.imageAlt}
@@ -131,7 +147,7 @@ const [arriving, setArriving] = useState(false);
 </div>
           </div>
 
-          <div className="p-4">
+          <div className="px-4 pb-4 pt-2">
             {readyCount > 0 ? (
               <div className="mb-4 rounded-[20px] border border-emerald-200 bg-emerald-50 px-4 py-3">
                 <div className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-emerald-700">
@@ -146,7 +162,7 @@ const [arriving, setArriving] = useState(false);
             ) : null}
 
             {isCourierFlow ? (
-  <div className="mt-3 rounded-[20px] border border-slate-200 bg-white p-1.5">
+  <div className="mt-1 rounded-[20px] border border-slate-200 bg-white p-1.5">
     <button
       type="button"
       onClick={() => setOpenDescriptionAccordion((v) => !v)}
@@ -169,7 +185,7 @@ const [arriving, setArriving] = useState(false);
     {openDescriptionAccordion ? (
       <div className="mt-3 rounded-[18px] border border-slate-200 bg-slate-50 px-4 py-3">
         <div className="whitespace-pre-wrap text-[14px] leading-5 text-slate-700">
-          {packageDescription || "Sin descripción adicional."}
+          {cleanedPackageDescription || "Sin descripción adicional."}
         </div>
       </div>
     ) : null}
@@ -181,7 +197,7 @@ const [arriving, setArriving] = useState(false);
                 Indicaciones del cliente
               </div>
               <div className="mt-2 whitespace-pre-wrap text-[14px] leading-5 text-slate-700">
-                {order.customerNote?.trim() || "Sin indicaciones adicionales."}
+                {cleanedCustomerNote || "Sin indicaciones adicionales."}
               </div>
             </div>
 

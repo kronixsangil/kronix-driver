@@ -451,15 +451,11 @@ export default function AvailableOrderCard({
                 </div>
 
                 <p className="mt-2 line-clamp-2 text-[11px] leading-4 text-slate-500">
-                  Pedido ID:
+                  ID:
                   <span className="ml-1 font-medium">{order.orderId}</span>
                 </p>
 
                 <div className="mt-2 flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center rounded-full bg-white px-2.5 py-[6px] text-[12px] font-bold leading-none text-slate-700 ring-1 ring-slate-200 shadow-sm">
-                    {distanceLabel}
-                  </span>
-
                   <span className="inline-flex items-center rounded-full bg-white px-2.5 py-[6px] text-[12px] font-bold leading-none text-slate-700 ring-1 ring-slate-200 shadow-sm">
                     {amountPillLabel}
                   </span>

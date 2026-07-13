@@ -11,7 +11,7 @@ export type KronixServiceType =
   | "UNKNOWN";
 
 export type KronixServiceConfig = {
-  serviceType: KronixServiceType;
+  serviceType: string;
   label: string;
   shortLabel: string;
   workerLabel: string;
@@ -436,13 +436,112 @@ export function getOrderServiceType(order: Partial<DriverOrder> & Record<string,
   return "UNKNOWN";
 }
 
-export function getServiceConfig(orderOrType: Partial<DriverOrder> | string | null | undefined) {
+
+function getServiceSnapshot(
+  order: Partial<DriverOrder> & Record<string, any>
+): Record<string, any> | null {
+  const snapshot = order?.serviceSnapshot;
+  return snapshot && typeof snapshot === "object"
+    ? (snapshot as Record<string, any>)
+    : null;
+}
+
+function getDynamicDefinition(
+  order: Partial<DriverOrder> & Record<string, any>
+): Record<string, any> | null {
+  const definition = getServiceSnapshot(order)?.definition;
+  return definition && typeof definition === "object"
+    ? (definition as Record<string, any>)
+    : null;
+}
+
+function getDynamicWorkerFlow(
+  order: Partial<DriverOrder> & Record<string, any>
+): Record<string, any> | null {
+  const flow = getDynamicDefinition(order)?.workerFlowSchema;
+  return flow && typeof flow === "object"
+    ? (flow as Record<string, any>)
+    : null;
+}
+
+function getLegacyVisualConfig(serviceKey: string) {
+  const known = matchServiceKey(serviceKey) ?? "UNKNOWN";
+  return SERVICE_CONFIGS[known] ?? SERVICE_CONFIGS.UNKNOWN;
+}
+
+function getDynamicServiceConfig(
+  order: Partial<DriverOrder> & Record<string, any>
+): KronixServiceConfig | null {
+  const definition = getDynamicDefinition(order);
+  if (!definition) return null;
+
+  const serviceKey = String(
+    definition.serviceKey ?? order?.serviceKey ?? order?.serviceType ?? ""
+  )
+    .trim()
+    .toUpperCase();
+
+  if (!serviceKey) return null;
+
+  const visualFallback = getLegacyVisualConfig(serviceKey);
+  const shortName = String(
+    definition.shortName ?? definition.name ?? visualFallback.shortLabel
+  ).trim();
+  const name = String(
+    definition.name ?? shortName ?? visualFallback.label
+  ).trim();
+
+  return {
+    ...visualFallback,
+    serviceType: serviceKey,
+    label: name || "Servicio KRONIX",
+    shortLabel: shortName || name || "Servicio",
+    workerLabel:
+      String(definition.workerLabel ?? "").trim() ||
+      visualFallback.workerLabel,
+    workerPluralLabel:
+      String(definition.workerPluralLabel ?? "").trim() ||
+      visualFallback.workerPluralLabel,
+    assetSlug:
+      String(definition.assetSlug ?? "").trim() ||
+      visualFallback.assetSlug,
+    imageAlt: name || visualFallback.imageAlt,
+    cardImageLeft:
+      String(definition.cardImageLeft ?? "").trim() || undefined,
+    cardImageRight:
+      String(definition.cardImageRight ?? "").trim() || undefined,
+    primaryColor:
+      String(definition.primaryColor ?? "").trim() || undefined,
+    accentColor:
+      String(definition.accentColor ?? "").trim() || undefined,
+  } as KronixServiceConfig;
+}
+
+function dynamicText(
+  value: unknown,
+  fallback: string
+) {
+  const clean = String(value ?? "").trim();
+  return clean || fallback;
+}
+
+export function getServiceConfig(
+  orderOrType: Partial<DriverOrder> | string | null | undefined
+) {
+  if (typeof orderOrType !== "string") {
+    const dynamic = getDynamicServiceConfig(
+      (orderOrType ?? {}) as Partial<DriverOrder> & Record<string, any>
+    );
+    if (dynamic) return dynamic;
+  }
+
   const serviceType =
     typeof orderOrType === "string"
       ? matchServiceKey(orderOrType) ?? "UNKNOWN"
       : getOrderServiceType((orderOrType ?? {}) as any);
 
-  return SERVICE_CONFIGS[serviceType] ?? SERVICE_CONFIGS.UNKNOWN;
+  return (SERVICE_CONFIGS as Record<string, KronixServiceConfig>)[serviceType] ??
+    SERVICE_CONFIGS.UNKNOWN;
 }
 
 export function getServiceAssetsSlug(orderOrType: Partial<DriverOrder> | string | null | undefined) {
@@ -454,8 +553,20 @@ export function getServiceImageSrc(
   side: "left" | "right" = "left"
 ) {
   const config = getServiceConfig(orderOrType);
-  if (config.serviceType === "STORE") return "/branding/kronix/card-comprar.png";
-  return `/services/${config.assetSlug}/${side === "right" ? "cardder" : "cardizq"}.png`;
+  if (config.serviceType === "STORE") {
+    return "/branding/kronix/card-comprar.png";
+  }
+
+  const configured =
+    side === "right"
+      ? (config as any).cardImageRight
+      : (config as any).cardImageLeft;
+
+  if (configured) return String(configured);
+
+  return `/services/${config.assetSlug}/${
+    side === "right" ? "cardder" : "cardizq"
+  }.png`;
 }
 
 export function isOperationalService(order: Partial<DriverOrder> & Record<string, any>) {
@@ -463,14 +574,24 @@ export function isOperationalService(order: Partial<DriverOrder> & Record<string
   return type !== "STORE" && type !== "UNKNOWN";
 }
 
-export function getPickupPointTitle(order: Partial<DriverOrder> & Record<string, any>) {
+export function getPickupPointTitle(
+  order: Partial<DriverOrder> & Record<string, any>
+) {
+  const dynamicLabel = getDynamicWorkerFlow(order)?.labels?.pickupPointTitle;
+  if (String(dynamicLabel ?? "").trim()) return String(dynamicLabel).trim();
+
   const type = getOrderServiceType(order);
   if (type === "TAXI") return "Punto de encuentro";
   if (type === "STORE") return "Recogidas";
   return "Punto de recogida";
 }
 
-export function formatPackageLabel(order: Partial<DriverOrder> & Record<string, any>) {
+export function formatPackageLabel(
+  order: Partial<DriverOrder> & Record<string, any>
+) {
+  const dynamicLabel = getDynamicWorkerFlow(order)?.labels?.packageLabel;
+  if (String(dynamicLabel ?? "").trim()) return String(dynamicLabel).trim();
+
   const type = getOrderServiceType(order);
   if (type === "TAXI") return "Datos del servicio";
   if (type === "MOTORCARGO") return "Descripción de la carga";
@@ -480,13 +601,19 @@ export function formatPackageLabel(order: Partial<DriverOrder> & Record<string, 
 
 export function getAvailableServiceMeta(order: Partial<DriverOrder> & Record<string, any>) {
   const config = getServiceConfig(order);
-  const tuning = AVAILABLE_SERVICE_IMAGE_TUNING[config.serviceType] ?? AVAILABLE_SERVICE_IMAGE_TUNING.UNKNOWN;
+  const tuning =
+    (AVAILABLE_SERVICE_IMAGE_TUNING as Record<string, AvailableImageTuning>)[
+      config.serviceType
+    ] ?? AVAILABLE_SERVICE_IMAGE_TUNING.UNKNOWN;
 
   return {
-    label: config.serviceType === "DELIVERY" ? config.shortLabel : config.label,
+    label:
+      config.serviceType === "DELIVERY"
+        ? config.shortLabel
+        : config.label,
     tone: config.tone,
     panelTone: config.panelTone,
-    imageSrc: getServiceImageSrc(config.serviceType, "right"),
+    imageSrc: getServiceImageSrc(order, "right"),
     imageAlt: config.imageAlt,
     imageWrap: tuning.imageWrap,
     imageClassName: tuning.imageClassName,
@@ -535,13 +662,36 @@ export function getAssignedServiceMeta(order: Partial<DriverOrder> & Record<stri
     },
   } as const;
 
-  const text = (custom as any)[serviceType] ?? custom.DELIVERY;
+  const fallbackText = (custom as any)[serviceType] ?? custom.DELIVERY;
+  const dynamicAssigned = getDynamicWorkerFlow(order)?.assigned ?? {};
+  const text = {
+    headerTitle: dynamicText(
+      dynamicAssigned.headerTitle,
+      fallbackText.headerTitle
+    ),
+    navigateText: dynamicText(
+      dynamicAssigned.navigateText,
+      fallbackText.navigateText
+    ),
+    arrivedText: dynamicText(
+      dynamicAssigned.arrivedText,
+      fallbackText.arrivedText
+    ),
+    readySingleText: dynamicText(
+      dynamicAssigned.readySingleText,
+      fallbackText.readySingleText
+    ),
+    footerText: dynamicText(
+      dynamicAssigned.footerText,
+      fallbackText.footerText
+    ),
+  };
 
   return {
     label: config.label,
     workerLabel: config.workerLabel,
     workerPluralLabel: config.workerPluralLabel,
-    imageSrc: getServiceImageSrc(config.serviceType, "left"),
+    imageSrc: getServiceImageSrc(order, "left"),
     imageAlt: config.imageAlt,
     tone: config.tone,
     heroTone: config.heroTone,
@@ -591,13 +741,47 @@ export function getPickupServiceMeta(order: Partial<DriverOrder> & Record<string
     },
   } as const;
 
-  const text = (custom as any)[serviceType] ?? custom.DELIVERY;
+  const fallbackText = (custom as any)[serviceType] ?? custom.DELIVERY;
+  const dynamicPickup = getDynamicWorkerFlow(order)?.pickup ?? {};
+  const dynamicChecks = Array.isArray(dynamicPickup.checks)
+    ? dynamicPickup.checks
+        .map((item: any, index: number) => ({
+          id: String(item?.id ?? item?.key ?? `check_${index + 1}`),
+          label: String(item?.label ?? "").trim(),
+          required: item?.required !== false,
+        }))
+        .filter((item: any) => item.label)
+    : [];
+
+  const text = {
+    headerTitle: dynamicText(
+      dynamicPickup.headerTitle,
+      fallbackText.headerTitle
+    ),
+    pickedUpText: dynamicText(
+      dynamicPickup.actionText ?? dynamicPickup.pickedUpText,
+      fallbackText.pickedUpText
+    ),
+    modalTitle: dynamicText(
+      dynamicPickup.modalTitle,
+      fallbackText.modalTitle
+    ),
+    modalDescription: dynamicText(
+      dynamicPickup.modalDescription,
+      fallbackText.modalDescription
+    ),
+    footerText: dynamicText(
+      dynamicPickup.footerText,
+      fallbackText.footerText
+    ),
+    checks: dynamicChecks,
+  };
 
   return {
     label: config.label,
     workerLabel: config.workerLabel,
     workerPluralLabel: config.workerPluralLabel,
-    imageSrc: getServiceImageSrc(config.serviceType, "left"),
+    imageSrc: getServiceImageSrc(order, "left"),
     imageAlt: config.imageAlt,
     tone: config.tone,
     heroTone: config.heroTone,
@@ -647,17 +831,47 @@ export function getEnRouteServiceMeta(order: Partial<DriverOrder> & Record<strin
     },
   } as const;
 
-  const text = (custom as any)[serviceType] ?? custom.DELIVERY;
+  const fallbackText = (custom as any)[serviceType] ?? custom.DELIVERY;
+  const dynamicEnRoute = getDynamicWorkerFlow(order)?.enRoute ?? {};
+  const text = {
+    headerTitle: dynamicText(
+      dynamicEnRoute.headerTitle,
+      fallbackText.headerTitle
+    ),
+    destinationLabel: dynamicText(
+      dynamicEnRoute.destinationLabel,
+      fallbackText.destinationLabel
+    ),
+    navigateText: dynamicText(
+      dynamicEnRoute.navigateText,
+      fallbackText.navigateText
+    ),
+    deliveredText: dynamicText(
+      dynamicEnRoute.deliveredText,
+      fallbackText.deliveredText
+    ),
+    footerText: dynamicText(
+      dynamicEnRoute.footerText,
+      fallbackText.footerText
+    ),
+  };
+
+  const dynamicShowDestination =
+    typeof dynamicEnRoute.showDestination === "boolean"
+      ? dynamicEnRoute.showDestination
+      : null;
 
   return {
   label: config.label,
   workerLabel: config.workerLabel,
   workerPluralLabel: config.workerPluralLabel,
 
-  // NUEVO
-  showDestinationButton: config.serviceType === "STORE",
+  showDestinationButton:
+    config.serviceType === "STORE"
+      ? true
+      : dynamicShowDestination ?? false,
 
-  imageSrc: getServiceImageSrc(config.serviceType, "left"),
+  imageSrc: getServiceImageSrc(order, "left"),
   imageAlt: config.imageAlt,
   tone: config.tone,
   heroTone: config.heroTone,

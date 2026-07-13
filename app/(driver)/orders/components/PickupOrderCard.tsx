@@ -47,10 +47,10 @@ export default function PickupOrderCard({
   const packageDescription = String((order as any)?.packageDescription ?? "").trim();
 
   const checks = useMemo(() => {
-    const out: { id: string; label: string; required: boolean }[] = [];
-    const serviceType = getOrderServiceType(order);
+    // Tienda en Línea conserva exactamente su lógica actual.
+    if (!isCourierFlow) {
+      const out: { id: string; label: string; required: boolean }[] = [];
 
-    if (!serviceType) {
       if (pickups.length > 1) {
         out.push({
           id: "all_pickups",
@@ -58,41 +58,34 @@ export default function PickupOrderCard({
           required: true,
         });
       }
+
       out.push({
         id: "products_ok",
         label: "Verifiqué que el pedido esté completo y en buen estado.",
         required: true,
       });
-    } else if (serviceType === "PACKAGE") {
-      out.push({
-        id: "package_ok",
-        label: "Verifiqué que el paquete corresponde al servicio solicitado.",
-        required: true,
-      });
-      out.push({
-        id: "package_state",
-        label: "El paquete fue recibido en condiciones adecuadas.",
-        required: true,
-      });
-    } else if (serviceType === "TAXI") {
-      out.push({
-        id: "passenger_ok",
-        label: "El pasajero ya abordó o confirmó que iniciamos el servicio.",
-        required: true,
-      });
-    } else if (serviceType === "MOTORCARGO") {
-      out.push({
-        id: "cargo_ok",
-        label: "Ya recibí la carga y está en condiciones adecuadas para transportarla.",
-        required: true,
-      });
-    } else {
-      out.push({
-        id: "pickup_ok",
-        label: "Ya recibí correctamente el encargo para llevar al destino.",
-        required: true,
-      });
+
+      if (note.length > 0) {
+        out.push({
+          id: "note_ok",
+          label: "Leí todas las observaciones e indicaciones del cliente.",
+          required: true,
+        });
+      }
+
+      return out;
     }
+
+    // Servicios Fase 2: las verificaciones provienen del serviceSnapshot.
+    const configuredChecks = Array.isArray((serviceMeta as any)?.checks)
+      ? (serviceMeta as any).checks
+      : [];
+
+    const out = configuredChecks.map((item: any, index: number) => ({
+      id: String(item?.id ?? item?.key ?? `check_${index + 1}`),
+      label: String(item?.label ?? "").trim(),
+      required: item?.required !== false,
+    })).filter((item: any) => item.label);
 
     if (note.length > 0) {
       out.push({
@@ -103,7 +96,8 @@ export default function PickupOrderCard({
     }
 
     return out;
-  }, [order, pickups.length, note.length]);
+  }, [isCourierFlow, pickups.length, note.length, serviceMeta]);
+
 
   const finalizePickedUp = async () => {
   if (working) return;

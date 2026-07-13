@@ -25,6 +25,10 @@ export type DriverOrder = {
   stores?: DriverStore[];
   storeName?: string;
   serviceType?: "STORE" | "DELIVERY" | "PACKAGE" | "TAXI" | "MOTORCARGO" | string | null;
+  serviceDefinitionId?: string | null;
+  serviceKey?: string | null;
+  serviceVersion?: number | null;
+  serviceSnapshot?: Record<string, any> | null;
   requiredWorkerType?: "MOTORCYCLE" | "TAXI" | "MOTORCARGO" | string | null;
   workerCommissionCOP?: number | null;
   courierServiceType?: "PICKUP_AND_DELIVERY" | "SEND_PACKAGE" | "ERRAND" | string | null;

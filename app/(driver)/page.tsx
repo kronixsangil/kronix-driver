@@ -69,6 +69,10 @@ type AvailableOrder = {
   tip?: number;
   orderType?: string | null;
   serviceType?: "STORE" | "DELIVERY" | "PACKAGE" | "TAXI" | "MOTORCARGO" | string | null;
+  serviceDefinitionId?: string | null;
+  serviceKey?: string | null;
+  serviceVersion?: number | null;
+  serviceSnapshot?: Record<string, any> | null;
   requiredWorkerType?: "MOTORCYCLE" | "TAXI" | "MOTORCARGO" | string | null;
   workerCommissionCOP?: number | null;
   courierServiceType?: "PICKUP_AND_DELIVERY" | "SEND_PACKAGE" | "ERRAND" | string | null;
@@ -595,6 +599,16 @@ function normalizeAvailable(raw: any): AvailableOrder | null {
     createdAt: Number.isFinite(createdAt) ? createdAt : Date.now(),
     orderType: raw?.orderType ? String(raw.orderType) : null,
     serviceType: raw?.serviceType ? String(raw.serviceType) : null,
+    serviceDefinitionId: raw?.serviceDefinitionId
+      ? String(raw.serviceDefinitionId)
+      : null,
+    serviceKey: raw?.serviceKey ? String(raw.serviceKey) : null,
+    serviceVersion:
+      raw?.serviceVersion != null ? Number(raw.serviceVersion) : null,
+    serviceSnapshot:
+      raw?.serviceSnapshot && typeof raw.serviceSnapshot === "object"
+        ? raw.serviceSnapshot
+        : null,
     requiredWorkerType: raw?.requiredWorkerType
       ? String(raw.requiredWorkerType)
       : null,
@@ -736,6 +750,16 @@ async function fetchOrderFromApi(orderId: string): Promise<AvailableOrder | null
       createdAt: new Date(String(o?.createdAt ?? new Date().toISOString())).getTime(),
       orderType: o?.orderType ? String(o.orderType) : null,
       serviceType: o?.serviceType ? String(o.serviceType) : null,
+      serviceDefinitionId: o?.serviceDefinitionId
+        ? String(o.serviceDefinitionId)
+        : null,
+      serviceKey: o?.serviceKey ? String(o.serviceKey) : null,
+      serviceVersion:
+        o?.serviceVersion != null ? Number(o.serviceVersion) : null,
+      serviceSnapshot:
+        o?.serviceSnapshot && typeof o.serviceSnapshot === "object"
+          ? o.serviceSnapshot
+          : null,
       requiredWorkerType: o?.requiredWorkerType
         ? String(o.requiredWorkerType)
         : null,
@@ -1654,6 +1678,10 @@ setAssignedStep(nextStep);
       orderId: assignedOrder.orderId,
       storeName,
       serviceType: assignedOrder.serviceType ?? null,
+      serviceDefinitionId: assignedOrder.serviceDefinitionId ?? null,
+      serviceKey: assignedOrder.serviceKey ?? null,
+      serviceVersion: assignedOrder.serviceVersion ?? null,
+      serviceSnapshot: assignedOrder.serviceSnapshot ?? null,
       requiredWorkerType: assignedOrder.requiredWorkerType ?? null,
       workerCommissionCOP:
         assignedOrder.workerCommissionCOP != null

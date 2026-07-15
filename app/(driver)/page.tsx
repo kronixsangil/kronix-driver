@@ -52,6 +52,7 @@ type AvailableOrderCustomer = {
   nickname: string;
   phone: string;
   email: string;
+  behavior?: Record<string, any> | null;
 };
 
 type ReadyPickupStoreNotice = {
@@ -595,6 +596,12 @@ function normalizeAvailable(raw: any): AvailableOrder | null {
       nickname: String(customer?.nickname ?? ""),
       phone: String(customer?.phone ?? ""),
       email: String(customer?.email ?? ""),
+      behavior:
+        customer?.behavior && typeof customer.behavior === "object"
+          ? customer.behavior
+          : raw?.customerBehavior && typeof raw.customerBehavior === "object"
+            ? raw.customerBehavior
+            : null,
     },
     createdAt: Number.isFinite(createdAt) ? createdAt : Date.now(),
     orderType: raw?.orderType ? String(raw.orderType) : null,
@@ -746,6 +753,12 @@ async function fetchOrderFromApi(orderId: string): Promise<AvailableOrder | null
         nickname: String(customer?.nickname ?? ""),
         phone: String(customer?.phone ?? ""),
         email: String(customer?.email ?? ""),
+        behavior:
+          customer?.behavior && typeof customer.behavior === "object"
+            ? customer.behavior
+            : o?.customerBehavior && typeof o.customerBehavior === "object"
+              ? o.customerBehavior
+              : null,
       },
       createdAt: new Date(String(o?.createdAt ?? new Date().toISOString())).getTime(),
       orderType: o?.orderType ? String(o.orderType) : null,

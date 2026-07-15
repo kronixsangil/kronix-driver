@@ -19,6 +19,19 @@ export type DriverStore = {
   image?: string;
 };
 
+export type CustomerBehaviorIndicator = {
+  totalEvaluatedServices: number;
+  completedServices: number;
+  customerCancelledServices: number;
+  pointsEarned: number;
+  pointsPossible: number;
+  reliabilityPct: number | null;
+  rating: number | null;
+  level: "NEW" | "DEVELOPING" | "RELIABLE" | "VERY_RELIABLE";
+  levelLabel: string;
+  hasEnoughHistory: boolean;
+};
+
 export type DriverOrder = {
   orderId: string;
 
@@ -61,6 +74,7 @@ export type DriverOrder = {
 
   customerName?: string;
   customerPhone?: string;
+  customerBehavior?: CustomerBehaviorIndicator | null;
 
   storesContacts?: StoreContact[];
 

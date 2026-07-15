@@ -3,7 +3,7 @@
 
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
-import type { GeoPoint } from "../../lib/types";
+import type { CustomerBehaviorIndicator, GeoPoint } from "../../lib/types";
 import { getAvailableServiceMeta, getOrderServiceType } from "../../lib/serviceConfig";
 
 type AvailableOrder = {
@@ -20,6 +20,13 @@ type AvailableOrder = {
   routeAddresses?: string[];
   customerAddress?: string;
   customerNote?: string;
+  customer?: {
+    id?: string;
+    name?: string;
+    nickname?: string;
+    behavior?: CustomerBehaviorIndicator | null;
+  };
+  customerBehavior?: CustomerBehaviorIndicator | null;
 
   status?: string;
   flowStatus?: string;
@@ -253,6 +260,23 @@ function getBadge(order: AvailableOrder) {
   };
 }
 
+function getCustomerDisplayName(order: AvailableOrder) {
+  const nickname = String(order.customer?.nickname ?? "").trim();
+  if (nickname) return nickname;
+  return String(order.customer?.name ?? "").trim() || "Cliente";
+}
+
+function getCustomerBehavior(order: AvailableOrder) {
+  return order.customerBehavior ?? order.customer?.behavior ?? null;
+}
+
+function behaviorTone(level?: string | null) {
+  if (level === "VERY_RELIABLE") return "border-emerald-200 bg-emerald-50 text-emerald-800";
+  if (level === "RELIABLE") return "border-blue-200 bg-blue-50 text-blue-800";
+  if (level === "DEVELOPING") return "border-amber-200 bg-amber-50 text-amber-800";
+  return "border-slate-200 bg-slate-50 text-slate-700";
+}
+
 function AccordionRow({
   title,
   open,
@@ -296,6 +320,8 @@ export default function AvailableOrderCard({
   const [driverPoint, setDriverPoint] = useState<{ lat: number; lng: number } | null>(null);
 
   const title = buildStoreTitle(order);
+  const customerName = getCustomerDisplayName(order);
+  const customerBehavior = getCustomerBehavior(order);
   const pickupsLabel = buildPickupsLabel(order.stores ?? []);
   const fallbackKm = Number(order.distanceKm ?? 0);
   const tip = Number(order.tip ?? 0);
@@ -535,6 +561,37 @@ export default function AvailableOrderCard({
                 ) : null}
               </div>
             ) : null}
+
+            <div className="rounded-xl bg-white px-3 py-3 ring-1 ring-gray-200">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-[11px] font-extrabold uppercase tracking-wide text-slate-600">Cliente</p>
+                  <p className="mt-1 truncate text-sm font-extrabold text-slate-900">{customerName}</p>
+                </div>
+                <span className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-extrabold ${behaviorTone(customerBehavior?.level)}`}>
+                  {customerBehavior?.levelLabel ?? "Cliente nuevo"}
+                </span>
+              </div>
+
+              <div className="mt-3 grid grid-cols-3 gap-2">
+                <div className="rounded-xl bg-slate-50 px-2 py-2 text-center">
+                  <div className="text-[9px] font-bold uppercase text-slate-500">Confiabilidad</div>
+                  <div className="mt-1 text-xs font-black">
+                    {customerBehavior?.reliabilityPct != null ? `${customerBehavior.reliabilityPct.toFixed(1)}%` : "Nuevo"}
+                  </div>
+                </div>
+                <div className="rounded-xl bg-slate-50 px-2 py-2 text-center">
+                  <div className="text-[9px] font-bold uppercase text-slate-500">Calificación</div>
+                  <div className="mt-1 text-xs font-black">
+                    ⭐ {customerBehavior?.rating != null ? customerBehavior.rating.toFixed(2) : "—"}
+                  </div>
+                </div>
+                <div className="rounded-xl bg-slate-50 px-2 py-2 text-center">
+                  <div className="text-[9px] font-bold uppercase text-slate-500">Servicios</div>
+                  <div className="mt-1 text-xs font-black">{customerBehavior?.totalEvaluatedServices ?? 0}</div>
+                </div>
+              </div>
+            </div>
 
             <div className="rounded-xl bg-white px-3 py-2 ring-1 ring-gray-200">
               <p className="text-[11px] font-extrabold uppercase tracking-wide text-slate-600">

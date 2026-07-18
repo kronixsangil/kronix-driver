@@ -100,26 +100,16 @@ export default function AcademyModulePage({
   return (
     <div className="w-full bg-slate-50 p-0">
       <div className="mx-auto w-full max-w-md px-0 pb-24 pt-0">
-        <div className="mx-0 overflow-hidden rounded-[24px] border border-emerald-100 bg-emerald-50">
-          <div className="flex items-start gap-4 p-4">
-            <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl border border-emerald-100 bg-white text-2xl">
-              {icon}
-            </div>
-
+        
+          <div className="flex items-start gap-2 p-2">        
             <div className="min-w-0 flex-1">
               <h1 className="text-lg font-black leading-6 text-slate-950">
                 {title}
               </h1>
-
-              <div className="mt-3 inline-flex rounded-full border border-emerald-100 bg-white px-3 py-1 text-[11px] font-black text-slate-700">
+              <div className="mt-1 inline-flex rounded-full border border-emerald-100 bg-white px-3 py-1 text-[11px] font-black text-slate-700">
                 📘 Versión: {version}
-              </div>
-
-              <div className="mt-2 inline-flex rounded-full border border-emerald-100 bg-white px-3 py-1 text-[11px] font-black text-slate-700">
-                🎓 Academia KroniX
-              </div>
-            </div>
-          </div>
+              </div>              
+            </div>          
         </div>
 
         <div className="mx-0 mt-4 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">

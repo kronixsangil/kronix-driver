@@ -7,16 +7,16 @@ export default function AcademyWelcomePage() {
   return (
     <AcademyModulePage
       title="Bienvenida KroniX"
-      subtitle="Cultura, trato al cliente, puntualidad y presentación."
+      subtitle="Cultura, trato al cliente, puntualidad, presentación y compromiso con el servicio."
       icon="👋"
       videoTitle="Bienvenida a la cultura KroniX"
       videoUrl="https://www.youtube.com/embed/EGikbXGoZVc"
-      version="academy-welcome-v1"
+      version="academy-welcome-v2"
       trainingType="ACADEMY_WELCOME"
       checklist={[
-        "Entiendo que KroniX busca un servicio respetuoso, seguro y confiable.",
-        "Me comprometo a tratar bien a clientes, comercios y equipo KroniX.",
-        "Entiendo la importancia de la puntualidad y la buena presentación.",
+        "Entiendo que KroniX busca servicios respetuosos, seguros y confiables.",
+        "Me comprometo a tratar bien a clientes, comercios, otros trabajadores y al equipo KroniX.",
+        "Entiendo la importancia de la puntualidad, la buena presentación y el cumplimiento de las instrucciones del servicio.",
       ]}
       quiz={[
         {
@@ -26,10 +26,10 @@ export default function AcademyWelcomePage() {
             { id: "fast_only", label: "Solo rapidez." },
             {
               id: "quality",
-              label: "Servicio seguro, respetuoso y confiable.",
+              label: "Un servicio seguro, respetuoso y confiable.",
               correct: true,
             },
-            { id: "tips", label: "Solo recibir propinas." },
+            { id: "tips", label: "Solo recibir pagos o propinas." },
           ],
         },
         {
@@ -43,15 +43,15 @@ export default function AcademyWelcomePage() {
         },
         {
           id: "presentation",
-          question: "¿Por qué importa la presentación personal?",
+          question: "¿Por qué importa la presentación personal y de los elementos de trabajo?",
           options: [
             {
               id: "trust",
-              label: "Porque genera confianza y buena imagen.",
+              label: "Porque genera confianza y refleja una buena imagen.",
               correct: true,
             },
             { id: "not_matter", label: "No importa." },
-            { id: "only_uniform", label: "Solo importa si hay uniforme." },
+            { id: "only_uniform", label: "Solo importa si existe uniforme." },
           ],
         },
       ]}

@@ -202,7 +202,7 @@ export default function DriverTrainingDocumentPage({
               />
 
               <span className="text-[11.5px] font-semibold leading-5 text-slate-700">
-                Declaro que he leído, comprendido y acepto aplicar este contenido operativo como conductor KroniX.
+                Declaro que he leído, comprendido y acepto aplicar este contenido operativo como trabajador KroniX.
               </span>
             </label>
 

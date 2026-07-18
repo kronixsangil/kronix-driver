@@ -26,41 +26,32 @@ const MODULES: AcademyModule[] = [
     title: "Bienvenida KroniX",
     href: "/profile/academy/welcome",
     duration: "3 minutos",
-    version: "academy-welcome-v1",
+    version: "academy-welcome-v2",
     trainingType: "ACADEMY_WELCOME",
     imageSrc: "/branding/Profile/Welcome.png",
     imageAlt: "Bienvenida KroniX",
   },
   {
     id: "road-safety",
-    title: "Seguridad Vial",
+    title: "Movilidad y Seguridad Vial",
     href: "/profile/academy/road-safety",
     duration: "8 minutos",
-    version: "academy-road-safety-v1",
+    version: "academy-road-safety-v2",
     trainingType: "ACADEMY_ROAD_SAFETY",
     imageSrc: "/branding/Profile/road-safety.png",
-    imageAlt: "Seguridad vial KroniX",
+    imageAlt: "Movilidad y seguridad vial KroniX",
   },
   {
     id: "app-operation",
     title: "Operación App",
     href: "/profile/academy/app-operation",
     duration: "4 minutos",
-    version: "academy-app-operation-v1",
+    version: "academy-app-operation-v2",
     trainingType: "ACADEMY_APP_OPERATION",
     imageSrc: "/branding/Profile/app-operation.png",
     imageAlt: "Operación App KroniX",
   },
-  {
-    id: "fraud-prevention",
-    title: "Antifraude",
-    href: "/profile/academy/fraud-prevention",
-    duration: "7 minutos",
-    version: "academy-fraud-prevention-v1",
-    trainingType: "ACADEMY_FRAUD_PREVENTION",
-    imageSrc: "/branding/Profile/fraud-prevention.png",
-    imageAlt: "Antifraude KroniX",
-  },
+  
 ];
 
 export default function DriverAcademyPage() {
@@ -138,7 +129,7 @@ export default function DriverAcademyPage() {
 
             <div className="relative z-10 min-w-0 flex-1">
               <h1 className="text-lg font-black leading-6 text-slate-950">
-                Academia KroniX para Conductores
+                Academia KroniX para Trabajadores
               </h1>
 
               <div className="mt-2 inline-flex rounded-full border border-emerald-100 bg-white px-3 py-1 text-[15px] font-black text-slate-700">
@@ -219,8 +210,9 @@ export default function DriverAcademyPage() {
             Meta del onboarding
           </div>
           <div className="mt-1 text-xs leading-5 text-emerald-900">
-            Capacitar al conductor de forma rápida, clara y profesional mediante
-            videos cortos y preguntas simples.
+            Capacitar a cada trabajador de forma rápida, clara y profesional
+            mediante videos cortos y preguntas simples, sin importar el tipo de
+            Servicio Dinámico que preste.
           </div>
         </div>
       </div>

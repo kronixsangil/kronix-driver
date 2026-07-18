@@ -6,35 +6,35 @@ import AcademyModulePage from "../components/AcademyModulePage";
 export default function AcademyRoadSafetyPage() {
   return (
     <AcademyModulePage
-      title="Seguridad Vial"
-      subtitle="Conducción segura, accidentes, zonas peligrosas y manejo defensivo."
+      title="Movilidad y Seguridad Vial"
+      subtitle="Desplazamientos seguros, prevención de accidentes, zonas de riesgo y conducción responsable cuando el servicio requiera vehículo."
       icon="🛵"
-      videoTitle="Seguridad vial para conductores KroniX"
+      videoTitle="Movilidad y seguridad vial para trabajadores KroniX"
       videoUrl="https://www.youtube.com/embed/_ckcWtvlHO0"
-      version="academy-road-safety-v1"
+      version="academy-road-safety-v2"
       trainingType="ACADEMY_ROAD_SAFETY"
       checklist={[
-        "Entiendo que debo cumplir las normas de tránsito.",
-        "No debo manipular el celular mientras conduzco.",
-        "Debo reportar accidentes o incidentes a KroniX oportunamente.",
+        "Entiendo que debo cumplir las normas de tránsito durante cualquier desplazamiento relacionado con un servicio.",
+        "Si conduzco un vehículo, no debo manipular el celular mientras está en movimiento.",
+        "Debo reportar accidentes, incidentes o situaciones de riesgo a KroniX oportunamente.",
       ]}
       quiz={[
         {
           id: "traffic_rules",
-          question: "¿Qué debe priorizar el conductor?",
+          question: "¿Qué debe priorizar un trabajador durante sus desplazamientos?",
           options: [
             { id: "speed", label: "La rapidez por encima de todo." },
             {
               id: "safety",
-              label: "La seguridad y las normas de tránsito.",
+              label: "La seguridad y el cumplimiento de las normas de tránsito.",
               correct: true,
             },
-            { id: "shortcut", label: "Tomar cualquier atajo." },
+            { id: "shortcut", label: "Tomar cualquier atajo disponible." },
           ],
         },
         {
           id: "phone",
-          question: "¿Qué debe hacer antes de revisar el celular?",
+          question: "Si está conduciendo, ¿qué debe hacer antes de revisar el celular?",
           options: [
             {
               id: "stop_safe",
@@ -42,20 +42,20 @@ export default function AcademyRoadSafetyPage() {
               correct: true,
             },
             { id: "drive_phone", label: "Revisarlo mientras conduce." },
-            { id: "ignore_traffic", label: "Bajar velocidad y mirar rápido." },
+            { id: "ignore_traffic", label: "Bajar la velocidad y mirar rápidamente." },
           ],
         },
         {
           id: "accident",
-          question: "Si ocurre un accidente, ¿qué debe hacer?",
+          question: "Si ocurre un accidente o incidente durante un servicio, ¿qué debe hacer?",
           options: [
             { id: "hide", label: "Ocultarlo si puede continuar." },
             {
               id: "report",
-              label: "Reportarlo a KroniX y seguir el protocolo.",
+              label: "Priorizar la seguridad, reportarlo a KroniX y seguir el protocolo correspondiente.",
               correct: true,
             },
-            { id: "finish_first", label: "Primero terminar el pedido siempre." },
+            { id: "finish_first", label: "Terminar el servicio antes de reportarlo, sin importar el riesgo." },
           ],
         },
       ]}

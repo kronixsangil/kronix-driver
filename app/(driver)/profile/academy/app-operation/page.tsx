@@ -7,29 +7,29 @@ export default function AcademyAppOperationPage() {
   return (
     <AcademyModulePage
       title="Operación App"
-      subtitle="Recogidas, entregas, pagos, soporte e incidentes."
+      subtitle="Estados del servicio, instrucciones, pagos, soporte, comunicación e incidentes."
       icon="📲"
-      videoTitle="Cómo operar correctamente en KroniX Driver"
+      videoTitle="Cómo operar correctamente en KroniX"
       videoUrl="https://www.youtube.com/embed/EGikbXGoZVc"
-      version="academy-app-operation-v1"
+      version="academy-app-operation-v2"
       trainingType="ACADEMY_APP_OPERATION"
       checklist={[
-        "Entiendo que debo actualizar correctamente los estados del pedido.",
-        "Debo comunicar novedades por canales autorizados.",
-        "Debo seguir instrucciones de recogida y entrega dentro de la app.",
+        "Entiendo que debo actualizar correctamente los estados del servicio.",
+        "Debo comunicar novedades por los canales autorizados.",
+        "Debo seguir las instrucciones visibles en la app según el Servicio Dinámico que esté realizando.",
       ]}
       quiz={[
         {
           id: "status",
-          question: "¿Por qué es importante actualizar los estados del pedido?",
+          question: "¿Por qué es importante actualizar los estados del servicio?",
           options: [
             {
               id: "tracking",
-              label: "Porque cliente, comercio y CTCC pueden hacer seguimiento.",
+              label: "Porque el cliente y KroniX pueden conocer el avance real del servicio.",
               correct: true,
             },
             { id: "not_needed", label: "No es importante." },
-            { id: "only_driver", label: "Solo le sirve al conductor." },
+            { id: "only_driver", label: "Solo le sirve al trabajador." },
           ],
         },
         {
@@ -38,24 +38,24 @@ export default function AcademyAppOperationPage() {
           options: [
             {
               id: "report",
-              label: "Reportarla por los canales autorizados.",
+              label: "Reportarla oportunamente por los canales autorizados.",
               correct: true,
             },
             { id: "ignore", label: "Ignorarla." },
-            { id: "personal_deal", label: "Resolverla por fuera de KroniX." },
+            { id: "personal_deal", label: "Ocultarla y resolverla por fuera de KroniX." },
           ],
         },
         {
           id: "delivery",
-          question: "¿Qué debe cuidar durante recogida y entrega?",
+          question: "¿Qué debe cuidar durante la ejecución de un servicio?",
           options: [
             {
               id: "instructions",
-              label: "Productos, instrucciones, tiempos y comunicación.",
+              label: "La seguridad, las instrucciones, los tiempos, los bienes involucrados y la comunicación.",
               correct: true,
             },
             { id: "only_speed", label: "Solo la velocidad." },
-            { id: "nothing", label: "Nada, solo llegar." },
+            { id: "nothing", label: "Nada; únicamente debe marcarlo como finalizado." },
           ],
         },
       ]}

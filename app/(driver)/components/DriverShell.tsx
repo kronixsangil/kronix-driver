@@ -13,14 +13,18 @@ export default function DriverShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
 
   const isPublic = useMemo(() => {
-    const p = String(pathname ?? "");
-    return (
-  p === "/login" ||
-  p === "/register" ||
-  p === "/forgot-password" ||
-  p === "/reset-password"
-);
-  }, [pathname]);
+  const p = String(pathname ?? "");
+
+  return (
+    p === "/login" ||
+    p === "/register" ||
+    p === "/forgot-password" ||
+    p === "/reset-password" ||
+    p === "/instalar" ||
+    p === "/instalar/android" ||
+    p === "/instalar/iphone"
+  );
+}, [pathname]);
 
   const [checking, setChecking] = useState(true);
   const [notDriver, setNotDriver] = useState(false);

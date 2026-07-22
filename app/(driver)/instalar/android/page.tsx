@@ -1,0 +1,311 @@
+// app/(driver)/instalar/android/page.tsx
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+
+type InstallState =
+  | "checking"
+  | "ready"
+  | "installed"
+  | "browser-not-ready"
+  | "wrong-browser"
+  | "ios"
+  | "unsupported";
+
+type BeforeInstallPromptEvent = Event & {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
+};
+
+const WORKER_URL = "https://driver.kronix.co";
+const ANDROID_INSTALL_URL = `${WORKER_URL}/instalar/android`;
+const CHROME_INTENT_URL =
+  "intent://driver.kronix.co/instalar/android#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=https%3A%2F%2Fdriver.kronix.co%2Finstalar%2Fandroid;end";
+
+function isStandaloneMode() {
+  if (typeof window === "undefined") return false;
+  return window.matchMedia?.("(display-mode: standalone)")?.matches || (window.navigator as any).standalone === true;
+}
+
+function isIOSDevice() {
+  if (typeof window === "undefined") return false;
+  const ua = window.navigator.userAgent || "";
+  const platform = window.navigator.platform || "";
+  return /iphone|ipad|ipod/i.test(ua) || (platform === "MacIntel" && Number((window.navigator as any).maxTouchPoints || 0) > 1);
+}
+
+function isAndroidDevice() {
+  if (typeof window === "undefined") return false;
+  return /android/i.test(window.navigator.userAgent || "");
+}
+
+function isChromeAndroidBrowser() {
+  if (typeof window === "undefined") return false;
+  const ua = window.navigator.userAgent || "";
+
+  const hasChrome = /Chrome\//i.test(ua) || /CriOS\//i.test(ua);
+  const isSamsung = /SamsungBrowser/i.test(ua);
+  const isEdge = /EdgA\//i.test(ua) || /Edg\//i.test(ua);
+  const isOpera = /OPR\//i.test(ua) || /Opera/i.test(ua);
+  const isFirefox = /Firefox\//i.test(ua) || /FxiOS\//i.test(ua);
+  const isWebView = /; wv\)/i.test(ua) || /Version\/\d+\.\d+.*Chrome\//i.test(ua);
+
+  return hasChrome && !isSamsung && !isEdge && !isOpera && !isFirefox && !isWebView;
+}
+
+export default function AndroidInstallPage() {
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [state, setState] = useState<InstallState>("checking");
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
+
+  const installed = state === "installed";
+  const wrongBrowser = state === "wrong-browser";
+
+  const installLabel = useMemo(() => {
+    if (busy) return "Abriendo instalación…";
+    return "Instalar app KRONIX";
+  }, [busy]);
+
+  useEffect(() => {
+    if (isStandaloneMode()) {
+      setState("installed");
+      setMessage("La app de trabajadores KRONIX ya está instalada y lista para usarse.");
+      return;
+    }
+
+    if (isIOSDevice()) {
+      setState("ios");
+      setMessage("Este teléfono parece ser iPhone o iPad. Usa la guía para iPhone.");
+      return;
+    }
+
+    if (!isAndroidDevice()) {
+      setState("unsupported");
+      setMessage("Esta página está optimizada para Android. También puedes abrir la app KRONIX desde el navegador.");
+    } else if (!isChromeAndroidBrowser()) {
+      setState("wrong-browser");
+      setMessage("Para evitar alertas de seguridad, instala KroniX únicamente desde Google Chrome. No descargues APK ni archivos externos.");
+    } else {
+      setState("browser-not-ready");
+      setMessage("Espera unos segundos. Si el botón no se activa, usa el menú ⋮ de Chrome y toca Instalar app.");
+    }
+
+    const onBeforeInstallPrompt = (event: Event) => {
+      event.preventDefault();
+
+      if (!isChromeAndroidBrowser()) {
+        setDeferredPrompt(null);
+        setState("wrong-browser");
+        setMessage("Para evitar alertas de seguridad, abre esta página en Google Chrome y luego toca Instalar app KRONIX.");
+        return;
+      }
+
+      const promptEvent = event as BeforeInstallPromptEvent;
+      setDeferredPrompt(promptEvent);
+      setState("ready");
+      setMessage("Listo. Toca el botón verde para instalar KroniX desde Google Chrome.");
+    };
+
+    const onAppInstalled = () => {
+      setDeferredPrompt(null);
+      setState("installed");
+      setMessage("La app de trabajadores KRONIX quedó instalada correctamente.");
+    };
+
+    const onDisplayModeChange = () => {
+      if (isStandaloneMode()) {
+        setDeferredPrompt(null);
+        setState("installed");
+        setMessage("La app de trabajadores KRONIX ya está instalada y lista para usarse.");
+      }
+    };
+
+    const media = window.matchMedia?.("(display-mode: standalone)");
+
+    window.addEventListener("beforeinstallprompt", onBeforeInstallPrompt);
+    window.addEventListener("appinstalled", onAppInstalled);
+    media?.addEventListener?.("change", onDisplayModeChange);
+
+    return () => {
+      window.removeEventListener("beforeinstallprompt", onBeforeInstallPrompt);
+      window.removeEventListener("appinstalled", onAppInstalled);
+      media?.removeEventListener?.("change", onDisplayModeChange);
+    };
+  }, []);
+
+  async function handleInstall() {
+    if (!deferredPrompt || busy || !isChromeAndroidBrowser()) {
+      setState("wrong-browser");
+      setMessage("Abre esta página en Google Chrome para instalar KroniX de forma segura.");
+      return;
+    }
+
+    setBusy(true);
+    setMessage("Confirma la instalación cuando Android te lo pregunte.");
+
+    try {
+      await deferredPrompt.prompt();
+      const choice = await deferredPrompt.userChoice;
+
+      if (choice.outcome === "accepted") {
+        setState("installed");
+        setMessage("La app de trabajadores KRONIX quedó instalada correctamente.");
+      } else {
+        setState("browser-not-ready");
+        setMessage("Instalación cancelada. Puedes tocar Instalar app KRONIX nuevamente cuando aparezca disponible.");
+      }
+
+      setDeferredPrompt(null);
+    } catch {
+      setMessage("No pudimos abrir el instalador automático. Usa el menú ⋮ de Chrome y toca Instalar app.");
+      setState("browser-not-ready");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const canInstall = Boolean(deferredPrompt) && !busy && state !== "ios" && state !== "installed" && !wrongBrowser;
+
+  return (
+    <main className="min-h-screen overflow-y-auto bg-[#f3f6fb] px-4 py-5 text-slate-950">
+      <section className="mx-auto w-full max-w-md rounded-[28px] border border-slate-200 bg-white shadow-[0_18px_46px_rgba(15,23,42,0.16)]">
+        <div className="relative overflow-hidden px-5 pb-6 pt-4 text-white">
+          <div className="absolute inset-0 bg-[linear-gradient(180deg,#03102b_0%,#0b356d_48%,#4a79b7_78%,#ffffff_100%)]" />
+          <div className="pointer-events-none absolute inset-0 opacity-90">
+            <span className="absolute left-[12%] top-[22%] h-1 w-1 rounded-full bg-white" />
+            <span className="absolute left-[40%] top-[16%] h-1 w-1 rounded-full bg-white" />
+            <span className="absolute right-[18%] top-[26%] h-1 w-1 rounded-full bg-white" />
+          </div>
+
+          <div className="relative flex items-center justify-between gap-3">
+            <Link href="/profile" className="grid h-11 w-11 place-items-center rounded-full border border-white/25 bg-white/10 text-xl shadow-sm backdrop-blur">
+              ←
+            </Link>
+
+            <img
+              src="/branding/kronix/header-logo.png"
+              alt="KroniX"
+              className="h-16 w-44 object-contain drop-shadow-[0_8px_18px_rgba(0,0,0,0.35)]"
+            />
+
+            <div className="h-11 w-11 rounded-full border border-white/25 bg-white/10" />
+          </div>
+
+          <div className="relative mt-3 text-center">
+            <div className="text-[26px] font-black leading-tight">Instalar app KRONIX</div>
+            <div className="mt-1 text-sm font-semibold text-white/90">Android · App de trabajadores</div>
+          </div>
+        </div>
+
+        <div className="space-y-3 px-5 pb-5">
+          {installed ? (
+            <div className="rounded-3xl border border-emerald-100 bg-emerald-50 p-5 text-center shadow-sm">
+              <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-white text-2xl shadow-sm ring-1 ring-emerald-100">
+                ✅
+              </div>
+
+              <img
+                src="/icons/kronix-icon.png"
+                alt="Ícono KroniX"
+                className="mx-auto mt-4 h-24 w-24 rounded-[24px] object-contain shadow-[0_14px_30px_rgba(15,23,42,0.20)] ring-1 ring-white"
+              />
+
+              <h1 className="mt-4 text-xl font-black text-slate-950">La app ya está instalada</h1>
+
+              <p className="mt-2 text-sm font-semibold leading-6 text-slate-700">
+                ¡Perfecto! La app de trabajadores quedó agregada a tu teléfono.
+              </p>
+
+              <div className="mt-4 rounded-2xl border border-white bg-white/90 p-4 text-left shadow-sm">
+                <div className="text-sm font-black text-slate-900">Para comenzar:</div>
+                <ol className="mt-2 space-y-2 text-sm font-semibold leading-5 text-slate-700">
+                  <li>1. Cierra esta pantalla del navegador.</li>
+                  <li>2. Busca el ícono de KRONIX junto a tus otras aplicaciones.</li>
+                  <li>3. Tócalo para abrir la app de trabajadores con mejor experiencia.</li>
+                </ol>
+              </div>
+            </div>
+          ) : wrongBrowser ? (
+            <div className="rounded-3xl border border-amber-200 bg-amber-50 p-5 text-center shadow-sm">
+              <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-white text-3xl shadow-sm ring-1 ring-amber-100">🛡️</div>
+
+              <h1 className="mt-3 text-xl font-black text-slate-950">Instala desde Google Chrome</h1>
+
+              <p className="mt-2 text-sm font-semibold leading-6 text-slate-700">
+                Este navegador puede activar una alerta de Google Play Protect. Para una instalación segura, abre KroniX en Chrome.
+              </p>
+
+              <a
+                href={CHROME_INTENT_URL}
+                className="mt-4 block rounded-2xl bg-emerald-600 px-4 py-4 text-base font-black text-white shadow-[0_12px_28px_rgba(5,150,105,0.25)] transition active:scale-[0.99] hover:bg-emerald-700"
+              >
+                Abrir en Google Chrome
+              </a>
+
+              <a
+                href={ANDROID_INSTALL_URL}
+                className="mt-2 block rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-800"
+              >
+                Copiar o compartir este enlace
+              </a>
+
+              <div className="mt-4 rounded-2xl border border-white bg-white/90 p-4 text-left shadow-sm">
+                <div className="text-sm font-black text-slate-900">Importante:</div>
+                <ol className="mt-2 space-y-2 text-sm font-semibold leading-5 text-slate-700">
+                  <li>1. No descargues APK ni archivos externos.</li>
+                  <li>2. Usa Google Chrome para instalar KroniX como app web segura.</li>
+                  <li>3. Luego toca “Instalar app KRONIX”.</li>
+                </ol>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="rounded-3xl border border-blue-100 bg-blue-50 p-4 text-center">
+                <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-white text-3xl shadow-sm ring-1 ring-blue-100">📱</div>
+                <h1 className="mt-3 text-xl font-black text-slate-950">KRONIX Trabajadores en tu pantalla</h1>
+                <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">
+                  Instala la app de trabajadores desde Google Chrome. No descargues APK ni archivos externos.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleInstall}
+                disabled={!canInstall}
+                className="w-full rounded-2xl bg-emerald-600 px-4 py-4 text-base font-black text-white shadow-[0_12px_28px_rgba(5,150,105,0.25)] transition active:scale-[0.99] hover:bg-emerald-700 disabled:bg-emerald-300 disabled:shadow-none"
+              >
+                {installLabel}
+              </button>
+            </>
+          )}
+
+          {message && !installed ? (
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 text-sm font-bold leading-5 text-slate-700">
+              {message}
+            </div>
+          ) : null}
+
+          {!installed && !wrongBrowser ? (
+            <div className="rounded-2xl border border-slate-200 bg-white p-4">
+              <div className="text-sm font-black text-slate-900">Si no aparece el instalador</div>
+              <ol className="mt-2 space-y-2 text-sm font-semibold leading-5 text-slate-600">
+                <li>1. Abre esta página en Google Chrome.</li>
+                <li>2. Toca el menú ⋮ arriba a la derecha.</li>
+                <li>3. Toca “Instalar app” o “Agregar a pantalla principal”.</li>
+              </ol>
+            </div>
+          ) : null}
+
+          <Link
+            href="/instalar/iphone"
+            className="block rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-center text-sm font-black text-blue-800"
+          >
+            Tengo iPhone
+          </Link>
+        </div>
+      </section>
+    </main>
+  );
+}

@@ -611,6 +611,15 @@ export default function DriverProfilePage() {
           />
 
           <ProfileImageNavCard
+            title="Instalar aplicación"
+            desc="Agrega KRONIX a la pantalla de inicio de tu teléfono"
+            href="/instalar"
+            imageSrc="/icons/Apple-icon.png"
+            imageAlt="Instalar aplicación KRONIX"
+            imageClassName="scale-[1.05] translate-x-[0px] translate-y-[0px]"
+          />
+
+          <ProfileImageNavCard
             title="T. y C."
             desc="Documento legal obligatorio para conductores"
             href="/profile/terms"

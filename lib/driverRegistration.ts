@@ -1,4 +1,5 @@
 //lib\driverRegistration.ts
+//lib\driverRegistration.ts
 "use client";
 
 import { apiFetch } from "./apiFetch";
@@ -21,6 +22,7 @@ export type PublicDynamicService = {
   workerTypeKey: string;
   workerLabel: string;
   icon: string | null;
+  requiresVehicle: boolean;
   primaryColor: string;
   accentColor: string;
   isActive: boolean;
@@ -113,6 +115,13 @@ export async function listPublicWorkerServices(
           "Trabajador"
       ),
       icon: item?.icon ? String(item.icon) : null,
+      requiresVehicle: Boolean(
+        item?.requiresVehicle ??
+          item?.vehicleRequired ??
+          item?.config?.requiresVehicle ??
+          item?.config?.vehicleRequired ??
+          false
+      ),
       primaryColor: String(item?.primaryColor ?? "#2563EB"),
       accentColor: String(item?.accentColor ?? "#EFF6FF"),
       isActive: Boolean(item?.isActive ?? true),

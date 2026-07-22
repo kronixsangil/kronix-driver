@@ -228,9 +228,10 @@ export default function DriverTopBar() {
 
   const isHome = pathname === "/";
   const isLogin = pathname === "/login";
-  const isForgot = pathname === "/forgot-password";
-  const isReset = pathname === "/reset-password";
-  const isPublic = isLogin || isForgot || isReset;
+const isRegister = pathname === "/register";
+const isForgot = pathname === "/forgot-password";
+const isReset = pathname === "/reset-password";
+const isPublic = isLogin || isRegister || isForgot || isReset;
 
   const showMenu = isHome && !isLogin;
   const showBack = !isHome;

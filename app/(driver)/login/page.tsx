@@ -183,9 +183,13 @@ function DriverLoginPageContent() {
               {loading ? "Ingresando…" : "INICIAR SESIÓN"}
             </button>
 
-            <div className="mt-6 text-center text-[11px] text-gray-500">
-              * Las cuentas de conductor son creadas por el administrador.
-            </div>
+            <button
+  type="button"
+  onClick={() => router.push("/register")}
+  className="mt-3 flex w-full items-center justify-center rounded-2xl bg-blue-600 py-3 text-sm font-extrabold text-white transition-all duration-200 hover:bg-blue-700 active:scale-[0.98]"
+>
+  REGISTRARSE
+</button>
           </div>
         </div>
 

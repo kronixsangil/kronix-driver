@@ -18,6 +18,7 @@ function isAuthPath(path: string) {
     path.startsWith("/auth/refresh") ||
     path.startsWith("/auth/logout") ||
     path.startsWith("/auth/register") ||
+    path.startsWith("/auth/driver/register") ||
     path.startsWith("/auth/forgot-password") ||
     path.startsWith("/auth/reset-password") ||
     path.startsWith("/auth/request-password-reset") ||

@@ -9,11 +9,13 @@ import { getMe } from "../../../lib/driverAuth";
 function isPublicRoute(pathname: string) {
   return (
     pathname === "/login" ||
-    pathname === "/forgot-password" ||
-    pathname === "/reset-password" ||
-    pathname.startsWith("/login?") ||
-    pathname.startsWith("/forgot-password?") ||
-    pathname.startsWith("/reset-password?")
+pathname === "/register" ||
+pathname === "/forgot-password" ||
+pathname === "/reset-password" ||
+pathname.startsWith("/login?") ||
+pathname.startsWith("/register?") ||
+pathname.startsWith("/forgot-password?") ||
+pathname.startsWith("/reset-password?")
   );
 }
 

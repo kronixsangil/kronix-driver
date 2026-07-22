@@ -14,7 +14,12 @@ export default function DriverShell({ children }: { children: ReactNode }) {
 
   const isPublic = useMemo(() => {
     const p = String(pathname ?? "");
-    return p === "/login" || p === "/forgot-password" || p === "/reset-password";
+    return (
+  p === "/login" ||
+  p === "/register" ||
+  p === "/forgot-password" ||
+  p === "/reset-password"
+);
   }, [pathname]);
 
   const [checking, setChecking] = useState(true);

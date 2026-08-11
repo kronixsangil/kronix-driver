@@ -6,6 +6,7 @@
   import { pushDriverSyncEvent } from "../../lib/driverSync";
   import { driverUpdateOrderStatus } from "../../lib/driverOrderApi";
   import { openMapsNavigation } from "../../lib/openMaps";
+  import ContactCustomerModal from "./ContactCustomerModal";
   import type { DriverOrder } from "../../lib/types";
   import {
     formatPackageLabel,
@@ -68,6 +69,7 @@
     const [openDescription, setOpenDescription] = useState(false);
     const [openDestination, setOpenDestination] = useState(false);
     const [selectedDestinationIndex, setSelectedDestinationIndex] = useState(0);
+    const [contactOpen, setContactOpen] = useState(false);
 
     const serviceMeta = getEnRouteServiceMeta(order);
     const isCourierFlow = !!getOrderServiceType(order) && getOrderServiceType(order) !== "STORE";
@@ -76,6 +78,20 @@
     const customerName = String(order.customerName ?? "Cliente").trim();
     const customerNote = String(order.customerNote ?? "").trim();
     const payout = Number(order.payout ?? 0);
+
+    const selectedStopPhone = String(
+      (Array.isArray(order.courierStops)
+        ? order.courierStops.slice().sort((a, b) => (a.sequence ?? 0) - (b.sequence ?? 0))[selectedDestinationIndex]?.contactPhone
+        : "") ?? ""
+    ).trim();
+
+    const customerPhone = String(
+      order.customerPhone ??
+        selectedStopPhone ??
+        (order as any)?.destination?.receiverPhone ??
+        (order as any)?.customer?.phone ??
+        ""
+    ).trim();
 
     const routeDestinations = useMemo(() => {
     const stops = Array.isArray(order.courierStops)
@@ -176,13 +192,30 @@
     return;
   }
 
-  // 3. Fallback a dirección (último recurso)
+  // 3. Compatibilidad con órdenes/API que entreguen las coordenadas
+  // directamente en el objeto raíz, en vez de dropoffLocation.
+  const directDropoffLat = Number(
+    (order as any)?.dropoffLat ??
+      (order as any)?.destinationLat ??
+      (order as any)?.customerLat
+  );
+  const directDropoffLng = Number(
+    (order as any)?.dropoffLng ??
+      (order as any)?.destinationLng ??
+      (order as any)?.customerLng
+  );
+
+  if (Number.isFinite(directDropoffLat) && Number.isFinite(directDropoffLng)) {
+    openMapsNavigation(directDropoffLat, directDropoffLng, "Ubicación del cliente");
+    return;
+  }
+
+  // 4. Fallback a dirección, solo para órdenes antiguas sin coordenadas.
   if (selectedDestination?.address) {
     openMapsNavigation(selectedDestination.address);
     return;
   }
 
-  // 4. Último fallback
   if (order.dropoffLocation?.address) {
     openMapsNavigation(order.dropoffLocation.address);
     return;
@@ -405,16 +438,6 @@
               </div>
               )}
 
-              {order.customerPhone ? (
-                <a
-                  href={`tel:${order.customerPhone}`}
-                  className="mt-3 flex w-full items-center justify-center gap-2 rounded-[20px] border border-emerald-200 bg-emerald-50 py-3 text-[15px] font-extrabold text-emerald-800 hover:bg-emerald-100"
-                >
-                  <img src="/icons/phone-green.png" alt="Llamar" className="h-5 w-5" />
-                  Llamar
-                </a>
-              ) : null}
-
               {err ? (
                 <div className="mt-3 rounded-[18px] border border-red-200 bg-red-50 px-4 py-3 text-[14px] font-semibold text-red-700">
                   ❌ {err}
@@ -431,6 +454,14 @@
 )}
 
               <button
+                type="button"
+                onClick={() => setContactOpen(true)}
+                className="mt-3 w-full rounded-[20px] border border-emerald-200 bg-emerald-50 py-3 text-[15px] font-extrabold text-emerald-800 transition hover:bg-emerald-100 active:scale-[0.995]"
+              >
+                Contactar cliente
+              </button>
+
+              <button
                 disabled={delivering}
                 onClick={handleDelivered}
                 className="mt-3 w-full rounded-[20px] bg-emerald-600 py-3 text-[15px] font-extrabold text-white hover:bg-emerald-700 disabled:opacity-60"
@@ -444,6 +475,13 @@
             </div>
           </div>
         </div>
+
+        <ContactCustomerModal
+          open={contactOpen}
+          customerName={customerName}
+          phone={customerPhone}
+          onClose={() => setContactOpen(false)}
+        />
       </div>
     );
   }

@@ -11,6 +11,7 @@ import {
   normalizeName,
 } from "../../lib/serviceConfig";
 import ChecklistConfirmModal from "./ChecklistConfirmModal";
+import ContactCustomerModal from "./ContactCustomerModal";
 
 interface Props {
   order: DriverOrder;
@@ -41,10 +42,26 @@ export default function PickupOrderCard({
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [working, setWorking] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [contactOpen, setContactOpen] = useState(false);
 
   const note = (order.customerNote ?? "").trim();
   const serviceMeta = getPickupServiceMeta(order);
   const packageDescription = String((order as any)?.packageDescription ?? "").trim();
+
+  const customerPhone = String(
+    order.customerPhone ??
+      (order.pickupLocations?.[selectedPickupIndex ?? 0] as any)?.contactPhone ??
+      (order as any)?.origin?.senderPhone ??
+      (order as any)?.customer?.phone ??
+      ""
+  ).trim();
+
+  const customerName = String(
+    order.customerName ??
+      (order.pickupLocations?.[selectedPickupIndex ?? 0] as any)?.contactName ??
+      (order as any)?.origin?.senderName ??
+      "Cliente"
+  ).trim();
 
   const checks = useMemo(() => {
     // Tienda en Línea conserva exactamente su lógica actual.
@@ -320,6 +337,14 @@ export default function PickupOrderCard({
             ) : null}
 
             <button
+              type="button"
+              onClick={() => setContactOpen(true)}
+              className="mt-4 w-full rounded-[20px] border border-emerald-200 bg-emerald-50 py-3 text-[15px] font-extrabold text-emerald-800 transition hover:bg-emerald-100 active:scale-[0.995]"
+            >
+              Contactar cliente
+            </button>
+
+            <button
               onClick={handlePickedUpClick}
               disabled={working}
               className="mt-4 w-full rounded-[20px] bg-emerald-600 py-3 text-[15px] font-extrabold text-white hover:bg-emerald-700 disabled:opacity-60"
@@ -333,6 +358,13 @@ export default function PickupOrderCard({
           </div>
         </div>
       </div>
+
+      <ContactCustomerModal
+        open={contactOpen}
+        customerName={customerName}
+        phone={customerPhone}
+        onClose={() => setContactOpen(false)}
+      />
 
       <ChecklistConfirmModal
         open={confirmOpen}

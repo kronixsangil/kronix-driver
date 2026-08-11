@@ -90,6 +90,17 @@ type WalletRechargesResponse = {
   items: WalletRechargeItem[];
 };
 
+type WorkerRechargeConfig = {
+  cityId: string;
+  citySlug: string;
+  cityName: string;
+  cityDepartment: string;
+  wompiEnabled: boolean;
+  manualRechargeEnabled: boolean;
+  whatsappNumber: string;
+  whatsappMessage: string;
+};
+
 type PendingWalletRecharge = {
   reference: string;
   cityId: string;
@@ -231,6 +242,7 @@ export default function WorkerWalletPage() {
   const [error, setError] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [customAmount, setCustomAmount] = useState<string>("");
+  const [rechargeConfig, setRechargeConfig] = useState<WorkerRechargeConfig | null>(null);
 
   const wompiScriptLoadedRef = useRef(false);
   const recoveringRef = useRef(false);
@@ -310,6 +322,22 @@ export default function WorkerWalletPage() {
       expenses,
     };
   }, [transactions]);
+
+  const loadRechargeConfig = useCallback(async () => {
+    if (!cityId) {
+      setRechargeConfig(null);
+      return;
+    }
+    try {
+      const r = await apiFetch<{ ok: boolean; config: WorkerRechargeConfig }>(
+        `/wallet/me/recharge-config?cityId=${encodeURIComponent(cityId)}`,
+        { method: "GET" }
+      );
+      setRechargeConfig(r?.config ?? null);
+    } catch {
+      setRechargeConfig(null);
+    }
+  }, [cityId]);
 
   const loadAll = useCallback(async () => {
     if (!cityId) {
@@ -420,7 +448,7 @@ export default function WorkerWalletPage() {
 
   async function recoverPendingRecharge(silent = false) {
     if (recoveringRef.current) return false;
-    if (!cityId) return false;
+    if (!cityId || rechargeConfig?.wompiEnabled === false) return false;
 
     const pending = readPendingRecharge();
 
@@ -456,6 +484,7 @@ export default function WorkerWalletPage() {
 
   useEffect(() => {
     if (cityId) {
+      loadRechargeConfig();
       loadAll().then(() => {
         recoverPendingRecharge(true);
       });
@@ -466,7 +495,7 @@ export default function WorkerWalletPage() {
       setLoading(false);
       setError("No se ha seleccionado ciudad.");
     }
-  }, [cityId, loadAll]);
+  }, [cityId, loadAll, loadRechargeConfig]);
 
   useEffect(() => {
     function onFocus() {
@@ -493,6 +522,10 @@ export default function WorkerWalletPage() {
   }
 
   async function handleWompiRecharge() {
+    if (rechargeConfig?.wompiEnabled === false) {
+      setError("Las recargas Wompi están desactivadas temporalmente.");
+      return;
+    }
     if (!cityId) {
       setError("No se ha seleccionado ciudad.");
       return;
@@ -582,6 +615,27 @@ export default function WorkerWalletPage() {
       setStatusMessage(null);
       setRecharging(false);
     }
+  }
+
+  function handleManualRecharge() {
+    if (!rechargeConfig?.manualRechargeEnabled) {
+      setError("Las recargas manuales no están disponibles temporalmente.");
+      return;
+    }
+    const phone = String(rechargeConfig.whatsappNumber ?? "").replace(/\D/g, "");
+    if (!phone) {
+      setError("El WhatsApp de recargas no está configurado.");
+      return;
+    }
+    const message = String(
+      rechargeConfig.whatsappMessage ??
+        "Hola, quiero recargar mi saldo KRONIX. Por favor indíqueme cómo continuar."
+    ).trim();
+    window.open(
+      `https://wa.me/${phone}?text=${encodeURIComponent(message)}`,
+      "_blank",
+      "noopener,noreferrer"
+    );
   }
 
   return (
@@ -680,6 +734,7 @@ export default function WorkerWalletPage() {
             </div>
           ) : null}
 
+          {rechargeConfig?.wompiEnabled !== false ? (
           <div className="rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm">
             <div className="flex items-start justify-between gap-3">
               <div>
@@ -755,6 +810,29 @@ export default function WorkerWalletPage() {
                 : `Recargar ${formatCOP(effectiveAmount || 0)}`}
             </button>
           </div>
+
+          ) : rechargeConfig?.manualRechargeEnabled !== false ? (
+            <div className="rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="text-[16px] font-black text-slate-900">Recargar saldo</div>
+                  <div className="mt-1 text-[12px] font-semibold text-slate-500">
+                    Solicita la recarga y envía el comprobante por WhatsApp.
+                  </div>
+                </div>
+                <div className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-extrabold text-slate-600 ring-1 ring-slate-200">
+                  Manual
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleManualRecharge}
+                className="mt-4 w-full rounded-[20px] bg-emerald-600 py-3 text-[15px] font-extrabold text-white transition hover:bg-emerald-700"
+              >
+                Recargar saldo
+              </button>
+            </div>
+          ) : null}
 
           <div className="rounded-[22px] border border-slate-200 bg-white shadow-sm">
             <div className="border-b border-slate-100 px-4 py-4">

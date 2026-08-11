@@ -4,6 +4,7 @@
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { openMapsNavigation } from "../../lib/openMaps";
+import ContactCustomerModal from "./ContactCustomerModal";
 import type { DriverOrder } from "../../lib/types";
 import {
   formatPackageLabel,
@@ -53,6 +54,7 @@ export default function AssignedOrderCard({
   const [openPickupAccordion, setOpenPickupAccordion] = useState(false);
 const [openDescriptionAccordion, setOpenDescriptionAccordion] = useState(false);
 const [arriving, setArriving] = useState(false);
+const [contactOpen, setContactOpen] = useState(false);
 
   useEffect(() => {
     if (pickups.length === 0) setSelectedPickupIndex(null);
@@ -87,21 +89,46 @@ const [arriving, setArriving] = useState(false);
   const pickupPlaceName = String(selectedPickupAny?.placeName ?? "").trim();
   const pickupReference = String(selectedPickupAny?.reference ?? "").trim();
 
+  const customerPhone = String(
+    order.customerPhone ??
+      selectedPickupAny?.contactPhone ??
+      (order as any)?.origin?.senderPhone ??
+      (order as any)?.customer?.phone ??
+      ""
+  ).trim();
+
+  const customerName = String(
+    order.customerName ??
+      selectedPickupAny?.contactName ??
+      (order as any)?.origin?.senderName ??
+      "Cliente"
+  ).trim();
+
   const handleNavigatePickup = () => {
     if (!selectedPickup) return;
 
+    // La dirección es solo información visible. Para navegar, las coordenadas
+    // guardadas en la orden tienen prioridad absoluta.
+    if (
+      Number.isFinite(Number(selectedPickup?.lat)) &&
+      Number.isFinite(Number(selectedPickup?.lng))
+    ) {
+      openMapsNavigation(
+        Number(selectedPickup.lat),
+        Number(selectedPickup.lng),
+        pickupPlaceName || "Ubicación del cliente"
+      );
+      return;
+    }
+
+    // Fallback únicamente para órdenes antiguas que no tengan coordenadas.
     const address = String(selectedPickup?.address ?? "").trim();
     if (address) {
       openMapsNavigation(address);
       return;
     }
 
-    if (
-      Number.isFinite(Number(selectedPickup?.lat)) &&
-      Number.isFinite(Number(selectedPickup?.lng))
-    ) {
-      openMapsNavigation(Number(selectedPickup.lat), Number(selectedPickup.lng), "Recogida");
-    }
+    alert("No hay ubicación válida para navegar");
   };
 
   return (
@@ -315,6 +342,14 @@ const [arriving, setArriving] = useState(false);
 
             <button
               type="button"
+              onClick={() => setContactOpen(true)}
+              className="mt-3 w-full rounded-[20px] border border-emerald-200 bg-emerald-50 py-3 text-[15px] font-extrabold text-emerald-800 transition hover:bg-emerald-100 active:scale-[0.995]"
+            >
+              Contactar cliente
+            </button>
+
+            <button
+              type="button"
               onClick={async () => {
                 if (!onArrived || arriving) return;
 
@@ -353,6 +388,13 @@ const [arriving, setArriving] = useState(false);
           </div>
         </div>
       </div>
+
+      <ContactCustomerModal
+        open={contactOpen}
+        customerName={customerName}
+        phone={customerPhone}
+        onClose={() => setContactOpen(false)}
+      />
     </div>
   );
 }

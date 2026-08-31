@@ -239,8 +239,18 @@ function getBadge(order: AvailableOrder) {
   const status = String(order.status ?? "").toUpperCase();
   const flow = String(order.flowStatus ?? "").toUpperCase();
   const key = flow || status;
+  const serviceType = getOrderServiceType(order);
+  const isStoreOrder = serviceType === "STORE";
 
-  if (key === "PAYMENT_PENDING" || key === "WAITING_CONFIRMATION" || key === "STORE_CONFIRMED") {
+  // "AÚN NO LISTO" pertenece exclusivamente al flujo de Tienda en Línea.
+  // En Servicios Dinámicos STORE_CONFIRMED significa que el servicio está
+  // publicado y buscando un trabajador disponible.
+  if (
+    isStoreOrder &&
+    (key === "PAYMENT_PENDING" ||
+      key === "WAITING_CONFIRMATION" ||
+      key === "STORE_CONFIRMED")
+  ) {
     return {
       text: "AÚN NO LISTO",
       className: "bg-amber-50 text-amber-800 ring-1 ring-amber-200",

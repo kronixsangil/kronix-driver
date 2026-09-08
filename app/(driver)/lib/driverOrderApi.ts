@@ -108,3 +108,24 @@ export async function driverReportLocation(
     return { ok: false, error: e };
   }
 }
+
+export type DriverOperationalAvailability = {
+  ok?: boolean;
+  isOnline: boolean;
+  onlineSince?: string | null;
+  onlineUntil?: string | null;
+  lastHeartbeatAt?: string | null;
+  minutesRemaining?: number;
+};
+export async function driverGetAvailability() {
+  return apiFetch<DriverOperationalAvailability>("/drivers/me/availability", { method: "GET", cache: "no-store", credentials: "include" });
+}
+export async function driverConnect(onlineUntil: string) {
+  return apiFetch<DriverOperationalAvailability>("/drivers/me/availability/connect", { method: "POST", body: JSON.stringify({ onlineUntil }), cache: "no-store", credentials: "include" });
+}
+export async function driverDisconnect() {
+  return apiFetch<DriverOperationalAvailability>("/drivers/me/availability/disconnect", { method: "POST", body: JSON.stringify({}), cache: "no-store", credentials: "include" });
+}
+export async function driverAvailabilityHeartbeat() {
+  return apiFetch<DriverOperationalAvailability>("/drivers/me/availability/heartbeat", { method: "POST", body: JSON.stringify({}), cache: "no-store", credentials: "include" });
+}

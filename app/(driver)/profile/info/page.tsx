@@ -66,7 +66,7 @@ function OfficialDriverAvatar({
       {finalSrc ? (
         <img
           src={finalSrc}
-          alt="Foto oficial del conductor"
+          alt="Foto oficial del Trabajador"
           className="h-full w-full object-cover"
           onError={() => setFailed(true)}
         />

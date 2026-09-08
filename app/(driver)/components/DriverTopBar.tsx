@@ -7,7 +7,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { getMe, getDriverMe } from "../../../lib/driverAuth";
 import { logoutDriver } from "../../../lib/driverAuthActions";
-import { driverReleaseOrder } from "../lib/driverOrderApi";
+import { driverReleaseOrder, driverGetAvailability, driverConnect, driverDisconnect, driverAvailabilityHeartbeat, type DriverOperationalAvailability } from "../lib/driverOrderApi";
 import { apiFetch } from "../../../lib/apiFetch";
 import { useDriverCity } from "./DriverCityContext";
 
@@ -498,6 +498,50 @@ const isPublic = isLogin || isRegister || isForgot || isReset;
     window.open(url, "_blank", "noopener,noreferrer");
   };
 
+  const [availability, setAvailability] = useState<DriverOperationalAvailability | null>(null);
+  const [availabilityBusy, setAvailabilityBusy] = useState(false);
+  const warnedUntilRef = useRef<string>("");
+
+  async function refreshAvailability() {
+    if (!isLoggedIn) return;
+    try { setAvailability(await driverGetAvailability()); } catch {}
+  }
+
+  async function toggleAvailability() {
+    if (availabilityBusy) return;
+    setAvailabilityBusy(true);
+    try {
+      if (availability?.isOnline) {
+        setAvailability(await driverDisconnect());
+      } else {
+        const hours = window.prompt("¿Cuántas horas deseas trabajar? (Ejemplo: 2)", "2");
+        if (hours == null) return;
+        const n = Number(String(hours).replace(",", "."));
+        if (!Number.isFinite(n) || n <= 0 || n > 16) { window.alert("Ingresa un tiempo entre 0.1 y 16 horas."); return; }
+        const until = new Date(Date.now() + n * 60 * 60 * 1000).toISOString();
+        setAvailability(await driverConnect(until));
+      }
+    } catch (e: any) { window.alert(String(e?.message ?? "No pudimos cambiar tu disponibilidad.")); }
+    finally { setAvailabilityBusy(false); }
+  }
+
+  useEffect(() => { if (isLoggedIn) void refreshAvailability(); }, [isLoggedIn]);
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    const id = window.setInterval(async () => {
+      try {
+        const next = await driverAvailabilityHeartbeat(); setAvailability(next);
+        if (next.isOnline && next.onlineUntil && Number(next.minutesRemaining ?? 99) <= 10 && warnedUntilRef.current !== next.onlineUntil) {
+          warnedUntilRef.current = next.onlineUntil;
+          if (window.confirm("Tu jornada termina en 10 minutos o menos. ¿Deseas extenderla 1 hora?")) {
+            setAvailability(await driverConnect(new Date(new Date(next.onlineUntil).getTime() + 60 * 60 * 1000).toISOString()));
+          }
+        }
+      } catch {}
+    }, 60000);
+    return () => window.clearInterval(id);
+  }, [isLoggedIn]);
+
   return (
     <>
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur">
@@ -596,12 +640,11 @@ const isPublic = isLogin || isRegister || isForgot || isReset;
       …
     </div>
   ) : isLoggedIn ? (
-    <div className="mt-1 flex items-center gap-1 px-1 py-[2px]">
-      <span className="h-2 w-2 rounded-full bg-green-500" />
-      <span className="text-[11px] font-extrabold leading-none text-green-700">
-        Conectado
-      </span>
-    </div>
+    <button type="button" onClick={toggleAvailability} disabled={availabilityBusy}
+      className={`mt-1 flex items-center gap-1 rounded-full px-2 py-[3px] text-[10px] font-extrabold ${availability?.isOnline ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-600"}`}>
+      <span className={`h-2 w-2 rounded-full ${availability?.isOnline ? "bg-green-500" : "bg-slate-400"}`} />
+      {availabilityBusy ? "..." : availability?.isOnline ? `Conectado · ${availability.minutesRemaining ?? ""} min` : "Conectarme"}
+    </button>
   ) : (
     <Link
       href="/login?next=/"

@@ -13,7 +13,7 @@ export default function DriverInstructionsPage() {
       title: "Proceso de recogida en tienda",
       content: `
 1. Llega puntual al establecimiento.
-2. Preséntate como conductor KroniX.
+2. Preséntate como Trabajador KroniX.
 3. Verifica que el pedido coincida con la orden en la app.
 4. Confirma recogida solo cuando el pedido esté completo.
       `,
@@ -69,7 +69,7 @@ export default function DriverInstructionsPage() {
       <div className="mx-auto w-full max-w-md px-0 pb-24 pt-0 space-y-5">
         <div>
           <h1 className="text-lg font-extrabold text-gray-900">Instructivo</h1>
-          <p className="mt-1 text-sm text-gray-600">Manual oficial del conductor</p>
+          <p className="mt-1 text-sm text-gray-600">Manual oficial del Trabajador</p>
 
           <div className="mt-2 inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-[11px] font-extrabold text-slate-700 ring-1 ring-slate-200">
             <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" />

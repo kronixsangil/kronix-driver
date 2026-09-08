@@ -108,7 +108,7 @@ function DriverLoginPageContent() {
           <div className="pointer-events-none absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_30%_20%,white,transparent_40%)]" />
 
           <div className="relative z-10 text-2xl font-extrabold">
-            Ingreso Conductor
+            Ingreso Trabajador
           </div>
           <div className="relative z-10 mt-2 text-sm text-white/90">
             Inicia sesión y gestiona tus entregas en segundos.

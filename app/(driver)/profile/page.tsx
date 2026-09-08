@@ -432,7 +432,7 @@ export default function DriverProfilePage() {
   } = useDriverCity();
 
   const [me, setMe] = useState<MeState>({
-    fullName: "Conductor",
+    fullName: "Trabajador",
     email: "—",
     phone: "—",
     vehicle: "—",

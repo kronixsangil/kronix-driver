@@ -7,6 +7,10 @@ import {
   driverReleaseOrder,
   driverReportLocation,
   driverUpdateOrderStatus,
+  driverGetAvailability,
+  driverConnect,
+  driverDisconnect,
+  type DriverOperationalAvailability,
 } from "../(driver)/lib/driverOrderApi";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import AssignedOrderCard from "../(driver)/orders/components/AssignedOrderCard";
@@ -881,6 +885,123 @@ const [checkingPrivacy, setCheckingPrivacy] = useState(true);
   const [canOperate, setCanOperate] = useState<boolean>(true);
   const [blockedMsg, setBlockedMsg] = useState<string>("");
   const [checkingEligibility, setCheckingEligibility] = useState<boolean>(true);
+
+  const [availability, setAvailability] = useState<DriverOperationalAvailability | null>(null);
+  const [availabilityBusy, setAvailabilityBusy] = useState(false);
+  const [connectModalOpen, setConnectModalOpen] = useState(false);
+  const [connectUntilTime, setConnectUntilTime] = useState("");
+
+  const publishAvailability = useCallback((next: DriverOperationalAvailability) => {
+    setAvailability(next);
+    try {
+      window.dispatchEvent(
+        new CustomEvent("kronix:driver-availability-changed", { detail: next })
+      );
+    } catch {}
+  }, []);
+
+  const refreshOperationalAvailability = useCallback(async () => {
+    try {
+      const next = await driverGetAvailability();
+      publishAvailability(next);
+    } catch {}
+  }, [publishAvailability]);
+
+  useEffect(() => {
+    void refreshOperationalAvailability();
+
+    const onAvailabilityChanged = (event: Event) => {
+      const detail = (event as CustomEvent<DriverOperationalAvailability>)?.detail;
+      if (detail && typeof detail.isOnline === "boolean") {
+        setAvailability(detail);
+      }
+    };
+
+    window.addEventListener(
+      "kronix:driver-availability-changed",
+      onAvailabilityChanged
+    );
+
+    const timer = window.setInterval(() => {
+      void refreshOperationalAvailability();
+    }, 30000);
+
+    return () => {
+      window.removeEventListener(
+        "kronix:driver-availability-changed",
+        onAvailabilityChanged
+      );
+      window.clearInterval(timer);
+    };
+  }, [refreshOperationalAvailability]);
+
+  function openConnectModal() {
+    if (!canOperate || availabilityBusy) return;
+
+    const suggested = new Date(Date.now() + 2 * 60 * 60 * 1000);
+    setConnectUntilTime(
+      `${String(suggested.getHours()).padStart(2, "0")}:${String(
+        suggested.getMinutes()
+      ).padStart(2, "0")}`
+    );
+    setConnectModalOpen(true);
+  }
+
+  async function confirmConnect() {
+    if (!connectUntilTime || availabilityBusy) return;
+
+    const [hoursRaw, minutesRaw] = connectUntilTime.split(":");
+    const hours = Number(hoursRaw);
+    const minutes = Number(minutesRaw);
+
+    if (!Number.isInteger(hours) || !Number.isInteger(minutes)) {
+      window.alert("Selecciona una hora válida.");
+      return;
+    }
+
+    const now = new Date();
+    const until = new Date(now);
+    until.setHours(hours, minutes, 0, 0);
+
+    if (until.getTime() <= now.getTime() + 5 * 60 * 1000) {
+      until.setDate(until.getDate() + 1);
+    }
+
+    if (until.getTime() > now.getTime() + 16 * 60 * 60 * 1000) {
+      window.alert("La jornada no puede superar 16 horas.");
+      return;
+    }
+
+    setAvailabilityBusy(true);
+    try {
+      const next = await driverConnect(until.toISOString());
+      publishAvailability(next);
+      setConnectModalOpen(false);
+    } catch (e: any) {
+      window.alert(
+        String(e?.message ?? "No pudimos conectarte en este momento.")
+      );
+    } finally {
+      setAvailabilityBusy(false);
+    }
+  }
+
+  async function disconnectFromWork() {
+    if (availabilityBusy) return;
+    setAvailabilityBusy(true);
+    try {
+      const next = await driverDisconnect();
+      publishAvailability(next);
+      setOrders([]);
+    } catch (e: any) {
+      window.alert(
+        String(e?.message ?? "No pudimos desconectarte en este momento.")
+      );
+    } finally {
+      setAvailabilityBusy(false);
+    }
+  }
+
 
   const assignedOrderRef = useRef<AvailableOrder | null>(null);
   const assignedStepRef = useRef<ActiveState["step"]>("ASIGNADO");
@@ -1907,12 +2028,52 @@ if (
           </div>
         </div>
       </div>
+
+
     </div>
   );
 }
 
+
   return (
     <div className="w-full bg-white p-0">
+      {connectModalOpen ? (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/45 p-4">
+          <div className="w-full max-w-sm rounded-3xl bg-white p-5 shadow-2xl">
+            <div className="text-lg font-black text-slate-950">¿Hasta qué hora deseas trabajar?</div>
+            <p className="mt-2 text-sm leading-5 text-slate-600">
+              KRONIX te mantendrá conectado hasta esa hora y te avisará cuando falten 10 minutos.
+            </p>
+
+            <input
+              type="time"
+              value={connectUntilTime}
+              onChange={(e) => setConnectUntilTime(e.target.value)}
+              className="mt-4 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-lg font-black text-slate-900 outline-none focus:ring-2 focus:ring-blue-100"
+            />
+
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setConnectModalOpen(false)}
+                disabled={availabilityBusy}
+                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => void confirmConnect()}
+                disabled={availabilityBusy || !connectUntilTime}
+                className="rounded-2xl bg-blue-600 px-4 py-3 text-sm font-black text-white disabled:opacity-60"
+              >
+                {availabilityBusy ? "Conectando…" : "Conectarme"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {!checkingEligibility &&
 !checkingTerms &&
 !checkingPrivacy &&
@@ -2023,7 +2184,12 @@ if (
               <div className="mt-5 grid grid-cols-2 gap-3">
                 <div className="rounded-2xl border border-gray-200 bg-white p-4">
                   <div className="text-[11px] font-bold text-gray-600">Estado</div>
-                  <div className="mt-1 text-sm font-extrabold text-emerald-700">En búsqueda</div>
+                  <div className={[
+                    "mt-1 text-sm font-extrabold",
+                    availability?.isOnline ? "text-emerald-700" : "text-slate-500",
+                  ].join(" ")}>
+                    {availability?.isOnline ? "En búsqueda" : "Desconectado"}
+                  </div>
                 </div>
                 <div className="rounded-2xl border border-gray-200 bg-white p-4">
                   <div className="text-[11px] font-bold text-gray-600">Ciudad</div>
@@ -2053,6 +2219,37 @@ if (
               >
                 {refreshingUi ? "Actualizando…" : "REINTENTAR"}
               </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  availability?.isOnline
+                    ? void disconnectFromWork()
+                    : openConnectModal()
+                }
+                disabled={availabilityBusy || !canOperate}
+                className={[
+                  "mt-3 w-full rounded-2xl border py-3 text-sm font-extrabold transition-all duration-200 active:scale-[0.98]",
+                  availability?.isOnline
+                    ? "border-red-500 bg-white text-red-600 hover:bg-red-50"
+                    : "border-blue-600 bg-blue-600 text-white hover:bg-blue-700",
+                  availabilityBusy || !canOperate
+                    ? "cursor-not-allowed opacity-60"
+                    : "",
+                ].join(" ")}
+              >
+                {availabilityBusy
+                  ? "PROCESANDO…"
+                  : availability?.isOnline
+                    ? "DESCONECTAR"
+                    : "CONECTAR"}
+              </button>
+
+              {availability?.isOnline && availability.onlineUntil ? (
+                <div className="mt-2 text-center text-[11px] font-semibold text-emerald-700">
+                  Conectado hasta las {new Date(availability.onlineUntil).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })}
+                </div>
+              ) : null}
 
               <div className="mt-3 text-center text-[11px] text-gray-500">
                 Si aparece un pedido en {cityShort}, se mostrará aquí automáticamente.

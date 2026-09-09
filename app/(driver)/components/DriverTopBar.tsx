@@ -502,9 +502,18 @@ const isPublic = isLogin || isRegister || isForgot || isReset;
   const [availabilityBusy, setAvailabilityBusy] = useState(false);
   const warnedUntilRef = useRef<string>("");
 
+  function publishAvailability(next: DriverOperationalAvailability) {
+    setAvailability(next);
+    try {
+      window.dispatchEvent(
+        new CustomEvent("kronix:driver-availability-changed", { detail: next })
+      );
+    } catch {}
+  }
+
   async function refreshAvailability() {
     if (!isLoggedIn) return;
-    try { setAvailability(await driverGetAvailability()); } catch {}
+    try { publishAvailability(await driverGetAvailability()); } catch {}
   }
 
   async function toggleAvailability() {
@@ -512,29 +521,39 @@ const isPublic = isLogin || isRegister || isForgot || isReset;
     setAvailabilityBusy(true);
     try {
       if (availability?.isOnline) {
-        setAvailability(await driverDisconnect());
+        publishAvailability(await driverDisconnect());
       } else {
         const hours = window.prompt("¿Cuántas horas deseas trabajar? (Ejemplo: 2)", "2");
         if (hours == null) return;
         const n = Number(String(hours).replace(",", "."));
         if (!Number.isFinite(n) || n <= 0 || n > 16) { window.alert("Ingresa un tiempo entre 0.1 y 16 horas."); return; }
         const until = new Date(Date.now() + n * 60 * 60 * 1000).toISOString();
-        setAvailability(await driverConnect(until));
+        publishAvailability(await driverConnect(until));
       }
     } catch (e: any) { window.alert(String(e?.message ?? "No pudimos cambiar tu disponibilidad.")); }
     finally { setAvailabilityBusy(false); }
   }
 
-  useEffect(() => { if (isLoggedIn) void refreshAvailability(); }, [isLoggedIn]);
+  useEffect(() => {
+    if (isLoggedIn) void refreshAvailability();
+
+    const onAvailabilityChanged = (event: Event) => {
+      const detail = (event as CustomEvent<DriverOperationalAvailability>)?.detail;
+      if (detail && typeof detail.isOnline === "boolean") setAvailability(detail);
+    };
+
+    window.addEventListener("kronix:driver-availability-changed", onAvailabilityChanged);
+    return () => window.removeEventListener("kronix:driver-availability-changed", onAvailabilityChanged);
+  }, [isLoggedIn]);
   useEffect(() => {
     if (!isLoggedIn) return;
     const id = window.setInterval(async () => {
       try {
-        const next = await driverAvailabilityHeartbeat(); setAvailability(next);
+        const next = await driverAvailabilityHeartbeat(); publishAvailability(next);
         if (next.isOnline && next.onlineUntil && Number(next.minutesRemaining ?? 99) <= 10 && warnedUntilRef.current !== next.onlineUntil) {
           warnedUntilRef.current = next.onlineUntil;
           if (window.confirm("Tu jornada termina en 10 minutos o menos. ¿Deseas extenderla 1 hora?")) {
-            setAvailability(await driverConnect(new Date(new Date(next.onlineUntil).getTime() + 60 * 60 * 1000).toISOString()));
+            publishAvailability(await driverConnect(new Date(new Date(next.onlineUntil).getTime() + 60 * 60 * 1000).toISOString()));
           }
         }
       } catch {}

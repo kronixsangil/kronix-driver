@@ -168,8 +168,8 @@
 
   if (
     selectedStop &&
-    Number.isFinite(Number(selectedStop.lat)) &&
-    Number.isFinite(Number(selectedStop.lng))
+    selectedStop.lat != null && Number.isFinite(Number(selectedStop.lat)) &&
+    selectedStop.lng != null && Number.isFinite(Number(selectedStop.lng))
   ) {
     openMapsNavigation(
       Number(selectedStop.lat),
@@ -181,8 +181,8 @@
 
   // 2. Usar coordenadas del dropoff (cliente)
   if (
-    Number.isFinite(Number(order.dropoffLocation?.lat)) &&
-    Number.isFinite(Number(order.dropoffLocation?.lng))
+    order.dropoffLocation?.lat != null && Number.isFinite(Number(order.dropoffLocation?.lat)) &&
+    order.dropoffLocation?.lng != null && Number.isFinite(Number(order.dropoffLocation?.lng))
   ) {
     openMapsNavigation(
       Number(order.dropoffLocation.lat),

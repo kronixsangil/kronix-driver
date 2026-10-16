@@ -279,7 +279,7 @@ export default function MetricsCard({
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <div className="text-sm font-extrabold text-gray-900">
-                  Nivel del conductor
+                  Nivel del Trabajador
                 </div>
                 <div className="mt-1 text-xs text-gray-600">
                   Nivel actual: {levelKey}

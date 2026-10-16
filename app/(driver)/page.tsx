@@ -525,8 +525,8 @@ function normalizeAvailable(raw: any): AvailableOrder | null {
               raw?.dropoffAddress ??
               ""
           ),
-          lat: Number(dropoffFromObj?.lat ?? raw?.dropoffLat ?? 0),
-          lng: Number(dropoffFromObj?.lng ?? raw?.dropoffLng ?? 0),
+          lat: Number(dropoffFromObj?.lat ?? raw?.dropoffLat ?? NaN),
+          lng: Number(dropoffFromObj?.lng ?? raw?.dropoffLng ?? NaN),
           placeName: String(
             dropoffFromObj?.placeName ??
               raw?.dropoffPlaceName ??
@@ -540,8 +540,8 @@ function normalizeAvailable(raw: any): AvailableOrder | null {
         }
       : {
           address: String(raw?.customerAddress ?? raw?.dropoffAddress ?? ""),
-          lat: Number(raw?.dropoffLat ?? 0),
-          lng: Number(raw?.dropoffLng ?? 0),
+          lat: Number(raw?.dropoffLat ?? NaN),
+          lng: Number(raw?.dropoffLng ?? NaN),
           placeName: String(raw?.dropoffPlaceName ?? "").trim(),
           reference: String(raw?.dropoffReference ?? "").trim(),
         };
@@ -711,8 +711,8 @@ async function fetchOrderFromApi(orderId: string): Promise<AvailableOrder | null
 
     const dropoffLocation: GeoPoint = {
       address: String(o?.dropoffAddress ?? ""),
-      lat: Number(o?.dropoffLat ?? 0),
-      lng: Number(o?.dropoffLng ?? 0),
+      lat: Number(o?.dropoffLat ?? NaN),
+      lng: Number(o?.dropoffLng ?? NaN),
       placeName: String(o?.dropoffPlaceName ?? "").trim(),
       reference: String(o?.dropoffReference ?? "").trim(),
     };
@@ -1793,7 +1793,7 @@ setAssignedStep(nextStep);
             ? [assignedOrder.pickupLocation]
             : [];
 
-    const dropoffLocation: GeoPoint = (assignedOrder as any).dropoffLocation ?? { lat: 0, lng: 0 };
+    const dropoffLocation: GeoPoint = (assignedOrder as any).dropoffLocation ?? { lat: NaN, lng: NaN };
 
     const storesContacts = storesSorted.map((s) => ({
       name: s.name,
@@ -1848,8 +1848,8 @@ courierStops: Array.isArray((assignedOrder as any)?.courierStops)
         ).trim(),
       })),
       dropoffLocation: {
-        lat: Number((dropoffLocation as any)?.lat ?? 0),
-        lng: Number((dropoffLocation as any)?.lng ?? 0),
+        lat: Number((dropoffLocation as any)?.lat ?? NaN),
+        lng: Number((dropoffLocation as any)?.lng ?? NaN),
         address: String((dropoffLocation as any)?.address ?? "").trim(),
         placeName: String((dropoffLocation as any)?.placeName ?? "").trim(),
         reference: String((dropoffLocation as any)?.reference ?? "").trim(),

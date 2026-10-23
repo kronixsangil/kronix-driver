@@ -34,6 +34,8 @@ function DriverLoginPageContent() {
 
   const [loading, setLoading] = useState(false);
   const [checking, setChecking] = useState(true);
+  const [restoreProblem,setRestoreProblem]=useState("");
+  const [restoreRetry,setRestoreRetry]=useState(0);
   const [error, setError] = useState<string | null>(null);
 
   const next = useMemo(() => {
@@ -46,7 +48,8 @@ function DriverLoginPageContent() {
     let alive = true;
 
     (async () => {
-      const me = await getMe();
+      let me;
+      try{me=await getMe();}catch(error:any){if(alive){setRestoreProblem(error?.message||"No pudimos validar el acceso. Tu sesión se conserva.");setChecking(false);}return;}
       if (!alive) return;
 
       const role = String(me?.user?.role ?? "").toUpperCase();
@@ -61,7 +64,7 @@ function DriverLoginPageContent() {
     return () => {
       alive = false;
     };
-  }, [router, next]);
+  }, [router, next,restoreRetry]);
 
   const canSubmit =
     emailOrPhone.trim().length >= 3 && password.trim().length >= 4 && !loading;
@@ -96,6 +99,8 @@ function DriverLoginPageContent() {
       setLoading(false);
     }
   };
+
+  if(restoreProblem)return <div className="m-5 rounded-3xl bg-white p-5"><p>{restoreProblem}</p><button onClick={()=>{setRestoreProblem("");setChecking(true);setRestoreRetry(n=>n+1);}} className="mt-4 rounded-xl bg-blue-700 p-3 text-white">Reintentar sesión guardada</button></div>;
 
   if (checking) {
     return <DriverLoginLoading />;

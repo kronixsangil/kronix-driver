@@ -42,9 +42,10 @@ async function refreshSession(): Promise<boolean> {
           },
           cache: "no-store",
         });
+        if(res.status>=500)throw {status:res.status,message:"No pudimos renovar el acceso. Reintenta; tu sesión se conserva."};
         return res.ok;
-      } catch {
-        return false;
+      } catch(error:any) {
+        throw {status:error?.status||0,message:error?.message||"No pudimos conectar. Tu sesión se conserva."};
       } finally {
         refreshing = null;
       }
@@ -98,9 +99,10 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
       cache: options.cache ?? "no-store",
     });
 
-  let res = await doFetch();
+  let res:Response;
+  try {res=await doFetch();} catch {throw {status:0,message:"No pudimos conectarnos. Tu sesión se conserva; revisa la conexión e intenta de nuevo."};}
 
-  if ((res.status === 401 || res.status === 403) && !isAuthPath(path)) {
+  if (res.status === 401 && !isAuthPath(path)) {
     const ok = await refreshSession();
     if (ok) {
       res = await doFetch();

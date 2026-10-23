@@ -7,6 +7,7 @@ import { writeCachedMe, clearSession } from "./driverAuth";
 function emitAuthChanged() {
   if (typeof window !== "undefined") {
     window.dispatchEvent(new Event("ct-auth-changed"));
+    window.dispatchEvent(new Event("auth:changed"));
   }
 }
 
@@ -35,7 +36,9 @@ export async function loginDriver(emailOrPhone: string, password: string) {
 export async function logoutDriver() {
   try {
     await apiFetch("/auth/logout", { method: "POST", cache: "no-store" });
-  } catch {}
+  } catch(error:any) {
+    if(![400,401].includes(Number(error?.status)))throw error;
+  }
 
   clearSession();
   emitAuthChanged();

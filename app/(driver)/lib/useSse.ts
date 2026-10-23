@@ -22,7 +22,7 @@ export function useSse({ url, onMessage, onError, enabled = true }: UseSseArgs) 
     if (!url) return;
 
     let closed = false;
-    const es = new EventSource(url, { withCredentials: true });
+    const es = new EventSource(`/api/driver/events/stream${new URL(url, window.location.origin).search}`, { withCredentials: true });
 
     es.onmessage = (ev) => {
       if (closed) return;

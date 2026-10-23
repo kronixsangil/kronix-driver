@@ -27,6 +27,8 @@ export default function DriverShell({ children }: { children: ReactNode }) {
 }, [pathname]);
 
   const [checking, setChecking] = useState(true);
+  const [connectionError,setConnectionError]=useState("");
+  const [retry,setRetry]=useState(0);
   const [notDriver, setNotDriver] = useState(false);
 
   useEffect(() => {
@@ -41,7 +43,8 @@ export default function DriverShell({ children }: { children: ReactNode }) {
         return;
       }
 
-      const res = await ensureDriverSession();
+      let res;
+      try{res=await ensureDriverSession();setConnectionError("");}catch(error:any){if(alive){setConnectionError(error?.message||"No pudimos validar el acceso. Tu sesión se conserva.");setChecking(false);}return;}
       if (!alive) return;
 
       if (!res.ok) {
@@ -63,7 +66,7 @@ export default function DriverShell({ children }: { children: ReactNode }) {
     return () => {
       alive = false;
     };
-  }, [router, pathname, isPublic]);
+  }, [router, pathname, isPublic, retry]);
 
   return (
     <div className="fixed inset-0 overflow-hidden bg-gray-100 driver-app-shell">
@@ -83,7 +86,7 @@ export default function DriverShell({ children }: { children: ReactNode }) {
                 : "top-[76px] bottom-[76px] px-4 pt-4 pb-6",
             ].join(" ")}
           >
-            {!isPublic && checking ? (
+            {!isPublic && connectionError ? <div className="rounded-3xl bg-white p-5"><p>{connectionError}</p><button className="mt-4 rounded-xl bg-blue-700 p-3 font-bold text-white" onClick={()=>{setChecking(true);setConnectionError("");setRetry(n=>n+1);}}>Reintentar</button></div> : !isPublic && checking ? (
               <div className="mt-2 rounded-3xl bg-white p-6 shadow-sm animate-pulse border border-gray-200">
                 <div className="h-6 w-44 bg-gray-100 rounded mb-4" />
                 <div className="h-12 bg-gray-100 rounded mb-3" />

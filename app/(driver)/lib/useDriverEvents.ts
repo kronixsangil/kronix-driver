@@ -26,7 +26,7 @@ export function useDriverEvents(handlers: Handlers) {
   handlersRef.current = handlers;
 
   useEffect(() => {
-    const es = new EventSource(`${API_BASE}/events/stream?role=driver`);
+    const es = new EventSource(`/api/driver/events/stream?driversAvailable=1`, { withCredentials: true });
 
     es.onmessage = (msg) => {
       try {

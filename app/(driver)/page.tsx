@@ -1483,7 +1483,7 @@ assignedStepRef.current = safeStep;
       await loadAvailableOrders();
       if (!alive) return;
 
-      const url = `${API_BASE}/events/stream?driversAvailable=1`;
+      const url = `/api/driver/events/stream?driversAvailable=1`;
       es = new EventSource(url, { withCredentials: true });
 
       es.onmessage = (event) => {
@@ -1579,7 +1579,7 @@ assignedStepRef.current = safeStep;
   useEffect(() => {
     if (!driverIdForEvents) return;
 
-    const url = `${API_BASE}/events/stream?driverId=${encodeURIComponent(driverIdForEvents)}`;
+    const url = `/api/driver/events/stream?driverId=${encodeURIComponent(driverIdForEvents)}`;
     const es = new EventSource(url, { withCredentials: true });
 
     es.onmessage = async (event) => {
@@ -1681,7 +1681,7 @@ useEffect(() => {
   useSse({
     enabled: !!assignedOrder?.orderId && assignedStep !== "ENTREGADO",
     url: assignedOrder?.orderId
-      ? `${API_BASE}/events/stream?orderId=${encodeURIComponent(assignedOrder.orderId)}`
+      ? `/api/driver/events/stream?orderId=${encodeURIComponent(assignedOrder.orderId)}`
       : null,
     onMessage: async (ev) => {
   try {

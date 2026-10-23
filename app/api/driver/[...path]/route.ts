@@ -53,8 +53,17 @@ async function proxy(req: NextRequest, context: { params: Promise<{ path: string
   });
 
   const responseHeaders = buildProxyHeaders(res.headers);
+  const isStream = String(res.headers.get('content-type') || '').includes('text/event-stream');
+  if (isStream) {
+    responseHeaders.set('Cache-Control','no-cache, no-transform');
+    responseHeaders.set('X-Accel-Buffering','no');
+    return new Response(res.body,{status:res.status,headers:responseHeaders});
+  }
   const responseBody = await res.arrayBuffer();
 
+  responseHeaders.delete("set-cookie");
+  const setCookies=(res.headers as any).getSetCookie?.() ?? (res.headers.get("set-cookie")||"").split(/,(?=\s*[^;,]+=)/g).filter(Boolean);
+  for(const value of setCookies)responseHeaders.append("set-cookie",value);
   return new Response(responseBody, {
     status: res.status,
     statusText: res.statusText,

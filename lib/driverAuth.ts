@@ -132,7 +132,8 @@ export async function getMe(): Promise<AuthMePayload | null> {
         },
       };
     }
-  } catch {
+  } catch(error:any) {
+    if(![401,403,404].includes(Number(error?.status)))throw error;
     // seguimos a fallback
   }
 
@@ -140,7 +141,8 @@ export async function getMe(): Promise<AuthMePayload | null> {
     const me = await apiFetch<any>("/auth/me", { method: "GET", cache: "no-store" });
     const normalized = normalizeAuthPayload(me);
     return normalized;
-  } catch {
+  } catch(error:any) {
+    if(![401,403].includes(Number(error?.status)))throw error;
     return null;
   }
 }
@@ -260,7 +262,9 @@ export async function ensureDriverSession(): Promise<{
   if (!me?.user?.sub) {
     try {
       await refreshDriver();
-    } catch {}
+    } catch(error:any) {
+      if(![400,401,403].includes(Number(error?.status)))throw error;
+    }
 
     me = await getMe();
     role = String(me?.user?.role ?? "").toUpperCase();

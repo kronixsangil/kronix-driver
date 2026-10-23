@@ -39,7 +39,8 @@ export default function ForcePasswordChangeGate({ children }: { children: ReactN
 
       setChecking(true);
 
-      const me = await getMe();
+      let me;
+      try{me=await getMe();}catch{if(alive)setChecking(false);return;}
       if (!alive) return;
 
       const force = Boolean(me?.user?.mustChangePassword);

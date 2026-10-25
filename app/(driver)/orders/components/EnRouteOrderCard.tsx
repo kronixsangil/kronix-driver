@@ -1,7 +1,9 @@
   //app/(driver)/orders/components/EnRouteOrderCard.tsx
   "use client";
 
-  import Image from "next/image";
+  import EstablishmentDeliverySummary from "./EstablishmentDeliverySummary";
+import {deliveryIdentity,isEstablishmentDelivery,isCommerceDelivery} from "../../lib/deliveryContext";
+import Image from "next/image";
   import { useEffect, useMemo, useRef, useState } from "react";
   import { pushDriverSyncEvent } from "../../lib/driverSync";
   import { driverUpdateOrderStatus } from "../../lib/driverOrderApi";
@@ -75,7 +77,8 @@
     const isCourierFlow = !!getOrderServiceType(order) && getOrderServiceType(order) !== "STORE";
     const packageDescription = String((order as any)?.packageDescription ?? "").trim();
 
-    const customerName = String(order.customerName ?? "Cliente").trim();
+    const deliveryContext = deliveryIdentity(order);
+    const customerName = String(deliveryContext.requestOrigin === "ESTABLISHMENT_REQUEST" ? deliveryContext.establishmentName || deliveryContext.senderName || "Establecimiento" : deliveryContext.requestOrigin === "COMMERCE_ORDER" ? deliveryContext.receiverName || order.customerName || "Cliente" : order.customerName || "Cliente").trim();
     const customerNote = String(order.customerNote ?? "").trim();
     const payout = Number(order.payout ?? 0);
 
@@ -85,11 +88,12 @@
         : "") ?? ""
     ).trim();
 
-    const customerPhone = String(
-      order.customerPhone ??
-        selectedStopPhone ??
-        (order as any)?.destination?.receiverPhone ??
-        (order as any)?.customer?.phone ??
+    const customerPhone = deliveryContext.requestOrigin === "ESTABLISHMENT_REQUEST" ? deliveryContext.senderPhone : String(
+      (isCommerceDelivery(order)?deliveryIdentity(order).receiverPhone:undefined) ||
+      order.customerPhone ||
+        selectedStopPhone ||
+        (order as any)?.destination?.receiverPhone ||
+        (order as any)?.customer?.phone ||
         ""
     ).trim();
 
@@ -325,6 +329,7 @@
             </div>
 
             <div className="p-4">
+            <EstablishmentDeliverySummary order={order}/>
               <div className="rounded-[18px] px-1 py-1">
                 <div className="text-[15px] font-black text-blue-700">
                   Cliente: {customerName}

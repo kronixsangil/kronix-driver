@@ -1,3 +1,4 @@
+import {deliveryServiceLabel,isCommerceDelivery,deliveryIdentity} from "./deliveryContext";
 //app\(driver)\lib\serviceConfig.ts
 import type { DriverOrder } from "./types";
 
@@ -607,7 +608,7 @@ export function getAvailableServiceMeta(order: Partial<DriverOrder> & Record<str
     ] ?? AVAILABLE_SERVICE_IMAGE_TUNING.UNKNOWN;
 
   return {
-    label:
+    label: isCommerceDelivery(order) || order.requestOrigin === "ESTABLISHMENT_REQUEST" ? deliveryServiceLabel(order,config.label) :
       config.serviceType === "DELIVERY"
         ? config.shortLabel
         : config.label,
@@ -688,7 +689,7 @@ export function getAssignedServiceMeta(order: Partial<DriverOrder> & Record<stri
   };
 
   return {
-    label: config.label,
+    label: deliveryServiceLabel(order,config.label),
     workerLabel: config.workerLabel,
     workerPluralLabel: config.workerPluralLabel,
     imageSrc: getServiceImageSrc(order, "left"),
@@ -778,7 +779,7 @@ export function getPickupServiceMeta(order: Partial<DriverOrder> & Record<string
   };
 
   return {
-    label: config.label,
+    label: deliveryServiceLabel(order,config.label),
     workerLabel: config.workerLabel,
     workerPluralLabel: config.workerPluralLabel,
     imageSrc: getServiceImageSrc(order, "left"),
@@ -862,12 +863,12 @@ export function getEnRouteServiceMeta(order: Partial<DriverOrder> & Record<strin
       : null;
 
   return {
-  label: config.label,
+  label: deliveryServiceLabel(order,config.label),
   workerLabel: config.workerLabel,
   workerPluralLabel: config.workerPluralLabel,
 
-  showDestinationButton:
-    config.serviceType === "STORE"
+  showDestinationButton: deliveryIdentity(order).requestOrigin === "ESTABLISHMENT_REQUEST" ? false :
+    (config.serviceType === "STORE" || isCommerceDelivery(order))
       ? true
       : dynamicShowDestination ?? false,
 
@@ -876,5 +877,6 @@ export function getEnRouteServiceMeta(order: Partial<DriverOrder> & Record<strin
   tone: config.tone,
   heroTone: config.heroTone,
   ...text,
+  ...(deliveryIdentity(order).requestOrigin === "ESTABLISHMENT_REQUEST" ? {headerTitle:"Sigue los datos entregados por el negocio",footerText:"Confirma cuando completes la entrega indicada por el negocio."} : {}),
 };
 }

@@ -1,6 +1,8 @@
 //app/(driver)/orders/components/PickupOrderCard.tsx
 "use client";
 
+import EstablishmentDeliverySummary from "./EstablishmentDeliverySummary";
+import {deliveryIdentity,isEstablishmentDelivery,isCommerceDelivery} from "../../lib/deliveryContext";
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import type { DriverOrder } from "../../lib/types";
@@ -49,6 +51,7 @@ export default function PickupOrderCard({
   const packageDescription = String((order as any)?.packageDescription ?? "").trim();
 
   const customerPhone = String(
+    (isEstablishmentDelivery(order)?deliveryIdentity(order).senderPhone:undefined) ??
     order.customerPhone ??
       (order.pickupLocations?.[selectedPickupIndex ?? 0] as any)?.contactPhone ??
       (order as any)?.origin?.senderPhone ??
@@ -57,6 +60,7 @@ export default function PickupOrderCard({
   ).trim();
 
   const customerName = String(
+    (isEstablishmentDelivery(order)?deliveryIdentity(order).establishmentName||deliveryIdentity(order).senderName:undefined) ??
     order.customerName ??
       (order.pickupLocations?.[selectedPickupIndex ?? 0] as any)?.contactName ??
       (order as any)?.origin?.senderName ??
@@ -197,6 +201,7 @@ export default function PickupOrderCard({
           </div>
 
           <div className="p-4">
+            <EstablishmentDeliverySummary order={order}/>
             {readyCount > 0 ? (
               <div className="mb-4 rounded-[20px] border border-emerald-200 bg-emerald-50 px-4 py-3">
                 <div className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-emerald-700">

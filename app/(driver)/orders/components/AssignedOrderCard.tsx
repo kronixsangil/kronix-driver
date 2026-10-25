@@ -1,6 +1,8 @@
 //app/(driver)/components/AssignedOrderCard.tsx
 "use client";
 
+import EstablishmentDeliverySummary from "./EstablishmentDeliverySummary";
+import {deliveryIdentity,isEstablishmentDelivery,isCommerceDelivery} from "../../lib/deliveryContext";
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { openMapsNavigation } from "../../lib/openMaps";
@@ -90,6 +92,7 @@ const [contactOpen, setContactOpen] = useState(false);
   const pickupReference = String(selectedPickupAny?.reference ?? "").trim();
 
   const customerPhone = String(
+    (isEstablishmentDelivery(order)?deliveryIdentity(order).senderPhone:undefined) ??
     order.customerPhone ??
       selectedPickupAny?.contactPhone ??
       (order as any)?.origin?.senderPhone ??
@@ -98,6 +101,7 @@ const [contactOpen, setContactOpen] = useState(false);
   ).trim();
 
   const customerName = String(
+    (isEstablishmentDelivery(order)?deliveryIdentity(order).establishmentName||deliveryIdentity(order).senderName:undefined) ??
     order.customerName ??
       selectedPickupAny?.contactName ??
       (order as any)?.origin?.senderName ??
@@ -175,6 +179,7 @@ const [contactOpen, setContactOpen] = useState(false);
           </div>
 
           <div className="px-4 pb-4 pt-2">
+            <EstablishmentDeliverySummary order={order}/>
             {readyCount > 0 ? (
               <div className="mb-4 rounded-[20px] border border-emerald-200 bg-emerald-50 px-4 py-3">
                 <div className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-emerald-700">

@@ -1,0 +1,7 @@
+import {deliveryIdentity} from '../../lib/deliveryContext';
+import type {DriverOrder} from '../../lib/types';
+export default function EstablishmentDeliverySummary({order}:{order:DriverOrder}){
+ const context=deliveryIdentity(order);if(!context.requestOrigin)return null;
+ const pickup=order.pickupLocations?.[0],dropoff=order.dropoffLocation;
+ return <section aria-label="Ruta del domicilio" className="my-3 space-y-2 rounded-2xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-slate-800"><div><p className="text-xs font-bold uppercase text-emerald-800">Recoger en</p><strong className="block text-base">{context.establishmentName||pickup?.placeName||context.senderName||'Establecimiento'}</strong><p>{pickup?.address||'Consulta la dirección con el negocio.'}</p>{context.senderPhone?<p>Contacto del negocio: {context.senderPhone}</p>:null}</div>{context.requestOrigin==='COMMERCE_ORDER'?<div className="border-t border-emerald-200 pt-2"><p className="text-xs font-bold uppercase text-emerald-800">Entregar a</p><strong className="block">{context.receiverName||order.customerName||'Cliente'}</strong><p>{dropoff?.address||order.customerAddress||'Dirección no disponible'}</p>{context.receiverPhone?<p>Celular: {context.receiverPhone}</p>:null}{dropoff?.reference?<p>Referencia: {dropoff.reference}</p>:null}</div>:<p className="border-t border-emerald-200 pt-2">El negocio te entregará el paquete con los datos de entrega en físico.</p>}</section>;
+}

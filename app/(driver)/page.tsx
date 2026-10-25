@@ -1,5 +1,6 @@
 // app/(driver)/page.tsx
 "use client";
+import {deliveryIdentity} from "./lib/deliveryContext";
 
 import AvailableOrderCard from "../(driver)/orders/components/AvailableOrderCard";
 import {
@@ -593,6 +594,7 @@ function normalizeAvailable(raw: any): AvailableOrder | null {
 
   const hydrated: AvailableOrder = {
     orderId,
+    ...deliveryIdentity(raw),
     stores,
     customer: {
       id: String(customer?.id ?? raw?.customerId ?? ""),
@@ -634,7 +636,7 @@ function normalizeAvailable(raw: any): AvailableOrder | null {
     tip,
     pickupLocations,
     pickupLocation: pickupLocations[0],
-    dropoffLocation: hasDropoff ? dropoffLocation : undefined,
+    dropoffLocation: dropoffLocation?.address || hasDropoff ? dropoffLocation : undefined,
     distanceKm: computedKm,
     routeAddresses,
     courierStops,
@@ -750,6 +752,7 @@ async function fetchOrderFromApi(orderId: string): Promise<AvailableOrder | null
 
     const hydrated: AvailableOrder = {
       orderId: String(o?.id ?? orderId),
+      ...deliveryIdentity(o),
       stores,
       customer: {
         id: String(o?.customerId ?? ""),
@@ -1810,6 +1813,8 @@ setAssignedStep(nextStep);
 
         const orderDTO: DriverOrder = {
       orderId: assignedOrder.orderId,
+      orderType: assignedOrder.orderType,
+      ...deliveryIdentity(assignedOrder),
       storeName,
       serviceType: assignedOrder.serviceType ?? null,
       serviceDefinitionId: assignedOrder.serviceDefinitionId ?? null,

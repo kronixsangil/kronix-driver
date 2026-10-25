@@ -34,6 +34,13 @@ export type CustomerBehaviorIndicator = {
 
 export type DriverOrder = {
   orderId: string;
+  orderType?: string | null;
+  requestOrigin?: string | null;
+  establishmentName?: string;
+  senderName?: string;
+  senderPhone?: string;
+  receiverName?: string;
+  receiverPhone?: string;
 
   stores?: DriverStore[];
   storeName?: string;

@@ -1,6 +1,7 @@
 //app/(driver)/components/AvailableOrderCard.tsx
 "use client";
 
+import {isEstablishmentDelivery,deliveryIdentity} from "../../lib/deliveryContext";
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import type { CustomerBehaviorIndicator, GeoPoint } from "../../lib/types";
@@ -330,7 +331,8 @@ export default function AvailableOrderCard({
   const [driverPoint, setDriverPoint] = useState<{ lat: number; lng: number } | null>(null);
 
   const title = buildStoreTitle(order);
-  const customerName = getCustomerDisplayName(order);
+  const deliveryContext = deliveryIdentity(order);
+  const customerName = deliveryContext.requestOrigin === "ESTABLISHMENT_REQUEST" ? deliveryContext.establishmentName || deliveryContext.senderName || "Establecimiento" : getCustomerDisplayName(order);
   const customerBehavior = getCustomerBehavior(order);
   const pickupsLabel = buildPickupsLabel(order.stores ?? []);
   const fallbackKm = Number(order.distanceKm ?? 0);
@@ -524,6 +526,7 @@ export default function AvailableOrderCard({
             </div>
           </div>
         </div>
+        {isEstablishmentDelivery(order)?<p className="mt-2 break-words text-sm font-semibold text-slate-800">📍 Recoger en {deliveryIdentity(order).establishmentName}: {order.pickupLocations?.[0]?.address||order.pickupLocation?.address||"Dirección no disponible"}</p>:null}
       </button>
 
       {expanded ? (
@@ -575,7 +578,7 @@ export default function AvailableOrderCard({
             <div className="rounded-xl bg-white px-3 py-3 ring-1 ring-gray-200">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-[11px] font-extrabold uppercase tracking-wide text-slate-600">Cliente</p>
+                  <p className="text-[11px] font-extrabold uppercase tracking-wide text-slate-600">{deliveryContext.requestOrigin === "ESTABLISHMENT_REQUEST" ? "Solicita" : "Cliente"}</p>
                   <p className="mt-1 truncate text-sm font-extrabold text-slate-900">{customerName}</p>
                 </div>
                 <span className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-extrabold ${behaviorTone(customerBehavior?.level)}`}>
